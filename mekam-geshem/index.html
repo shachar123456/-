@@ -756,6 +756,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       display: block;
     }
 
+    /* Map View Split Grid: Dedicated Right Sidebar + Clean Full-Height Map Canvas */
+    #viewMap.active {
+      display: grid;
+      grid-template-columns: 332px 1fr;
+    }
+
+    .map-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+    }
+
     #map {
       width: 100%;
       height: 100%;
@@ -1337,8 +1351,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       transform: translateX(-50%);
     }
 
-    /* Hide secondary city text labels at low zoom unless hovered or selected */
-    .city-map-pin-wrap.minor-label:not(.selected):not(:hover) .city-map-label {
+    /* Hide city text labels unless selected or hovered so the map is never cluttered */
+    .city-map-pin-wrap:not(.selected):not(:hover) .city-map-label {
       display: none;
     }
 
@@ -1360,25 +1374,96 @@ svg.leaflet-image-layer.leaflet-interactive path {
       color: #fff;
     }
 
-    /* Floating Map Analysis HUD Card (Top-Right of Map Canvas, Away from Bottom Dock) */
+    /* Dedicated Right Sidebar Panel (Does Not Cover Map) */
     .map-analysis-hud {
-      position: absolute;
-      right: 12px;
-      top: 12px;
-      z-index: 850;
-      width: min(310px, calc(100vw - 24px));
-      background: var(--bg-glass-strong);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 10px 12px;
-      box-shadow: var(--shadow-lg);
+      background: rgba(9, 15, 27, 0.98);
+      border-left: 1px solid var(--border-subtle);
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    .sidebar-cities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 120px;
+      padding-left: 2px;
+    }
+
+    .sidebar-city-row {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--text-main);
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
       gap: 8px;
-      pointer-events: auto;
-      transition: all 0.2s ease;
+      cursor: pointer;
+      text-align: right;
+      transition: background 0.14s ease, border-color 0.14s ease;
+    }
+
+    .sidebar-city-row:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+
+    .sidebar-city-row.active {
+      background: rgba(2, 132, 199, 0.28);
+      border-color: var(--accent);
+    }
+
+    .sidebar-city-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #475569;
+    }
+
+    .sidebar-city-dot.lvl-rain {
+      background: #38bdf8;
+      box-shadow: 0 0 6px #38bdf8;
+    }
+
+    .sidebar-city-dot.lvl-mod {
+      background: #22c55e;
+      box-shadow: 0 0 7px #22c55e;
+    }
+
+    .sidebar-city-dot.lvl-heavy {
+      background: #eab308;
+      box-shadow: 0 0 8px #eab308;
+    }
+
+    .sidebar-city-name {
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .sidebar-city-mm {
+      font-weight: 700;
+      color: #7dd3fc;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.75rem;
+    }
+
+    .sidebar-city-prob {
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.72rem;
+      min-width: 32px;
+      text-align: left;
     }
 
     .map-analysis-hud.collapsed .hud-body {
@@ -1951,11 +2036,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
       .spotlight-grid {
         grid-template-columns: 1fr;
       }
+      #viewMap.active {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
       .map-analysis-hud {
-        right: 10px;
-        left: 10px;
-        top: 10px;
-        width: auto;
+        border-left: 0;
+        border-bottom: 1px solid var(--border-subtle);
+        max-height: 220px;
+      }
+      .sidebar-cities-list {
+        display: none;
       }
     }
   </style>
@@ -1996,22 +2087,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="toastBanner" class="toast-banner" role="status" hidden></div>
     </header>
 
-    <!-- Primary Interactive Map View -->
+    <!-- Primary Interactive Map View (Clean Split: Right Sidebar + Full Map Stage) -->
     <main id="viewMap" class="view-panel active">
-      <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
-
-      <!-- Floating Map & Forecast City Analysis HUD -->
+      <!-- Dedicated Right Sidebar for City Map + Forecast Analysis -->
       <aside class="map-analysis-hud" id="mapAnalysisHud" aria-label="ניתוח גשם לפי מפה ותחזית">
         <div class="hud-header">
           <h2 class="hud-title">📊 ניתוח ערים: מפה + תחזית</h2>
           <button type="button" class="hud-toggle-btn" id="hudCollapseBtn" aria-expanded="true">מזער</button>
         </div>
-        <div class="hud-body">
+        <div class="hud-body" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;">
           <div class="hud-layer-pills" id="mapLayerPills" role="group" aria-label="שכבת נתוני ערים על המפה">
             <button type="button" class="hud-pill active" data-layer-mode="combined">מכ״ם + תחזית</button>
-            <button type="button" class="hud-pill" data-layer-mode="mm24h">גשם 24 ש׳ (מ״מ)</button>
-            <button type="button" class="hud-pill" data-layer-mode="prob24h">הסתברות (%)</button>
-            <button type="button" class="hud-pill" data-layer-mode="hidden">ללא תוויות</button>
+            <button type="button" class="hud-pill" data-layer-mode="mm24h">גשם 24 ש׳</button>
+            <button type="button" class="hud-pill" data-layer-mode="prob24h">הסתברות</button>
+            <button type="button" class="hud-pill" data-layer-mode="hidden">ללא נקודות</button>
           </div>
 
           <div class="hud-city-box">
@@ -2038,41 +2127,48 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </div>
           </div>
 
+          <div class="sidebar-cities-list" id="sidebarCitiesList" aria-label="רשימת ערים ונתוני גשם"></div>
+
           <button type="button" class="hud-open-stats-btn" id="hudOpenStatsBtn">לניתוח המלא וטבלת כל הערים בישראל ←</button>
         </div>
       </aside>
 
-      <aside class="side-floating" aria-label="מקרא עוצמת גשם">
-        <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
-          <span>חלש</span>
-          <div class="legend-bar"></div>
-          <span>חזק</span>
-        </div>
-      </aside>
+      <!-- Unobstructed Map Canvas Stage -->
+      <div class="map-stage">
+        <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
 
-      <footer class="bottom-dock">
-        <div class="dock-card">
-          <div class="transport-btns">
-            <button type="button" class="btn-circle" id="prevBtn" aria-label="פריים קודם" title="פריים קודם (חץ ימינה)">▶</button>
-            <button type="button" class="btn-circle btn-play" id="playBtn" aria-label="נגן או השהה" title="נגן / השהה (רווח)">⏵</button>
-            <button type="button" class="btn-circle" id="nextBtn" aria-label="פריים הבא" title="פריים הבא (חץ שמאלה)">◀</button>
+        <aside class="side-floating" aria-label="מקרא עוצמת גשם">
+          <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
+            <span>חלש</span>
+            <div class="legend-bar"></div>
+            <span>חזק</span>
           </div>
+        </aside>
 
-          <div class="timeline-box">
-            <input type="range" id="scrubber" class="scrubber-input" min="0" max="0" value="0" aria-label="בורר זמן מכ״ם">
-            <div class="timeline-meta">
-              <span id="rangeLabel">טוען ציר זמן…</span>
-              <span id="frameCounter">0 / 0</span>
+        <footer class="bottom-dock">
+          <div class="dock-card">
+            <div class="transport-btns">
+              <button type="button" class="btn-circle" id="prevBtn" aria-label="פריים קודם" title="פריים קודם (חץ ימינה)">▶</button>
+              <button type="button" class="btn-circle btn-play" id="playBtn" aria-label="נגן או השהה" title="נגן / השהה (רווח)">⏵</button>
+              <button type="button" class="btn-circle" id="nextBtn" aria-label="פריים הבא" title="פריים הבא (חץ שמאלה)">◀</button>
             </div>
-          </div>
 
-          <label class="opacity-box" for="opacitySlider">
-            <span>שקיפות</span>
-            <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
-            <span id="opacityValue">85%</span>
-          </label>
-        </div>
-      </footer>
+            <div class="timeline-box">
+              <input type="range" id="scrubber" class="scrubber-input" min="0" max="0" value="0" aria-label="בורר זמן מכ״ם">
+              <div class="timeline-meta">
+                <span id="rangeLabel">טוען ציר זמן…</span>
+                <span id="frameCounter">0 / 0</span>
+              </div>
+            </div>
+
+            <label class="opacity-box" for="opacitySlider">
+              <span>שקיפות</span>
+              <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
+              <span id="opacityValue">85%</span>
+            </label>
+          </div>
+        </footer>
+      </div>
     </main>
 
     <!-- Dedicated City Rain Statistics & Forecast vs Map Analysis View -->
@@ -3019,6 +3115,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const hudProbVal = document.getElementById("hudProbVal");
       const hudVerdictText = document.getElementById("hudVerdictText");
       const hudOpenStatsBtn = document.getElementById("hudOpenStatsBtn");
+      const sidebarCitiesList = document.getElementById("sidebarCitiesList");
 
       const kpiTopCity = document.getElementById("kpiTopCity");
       const kpiTopCitySub = document.getElementById("kpiTopCitySub");
@@ -3075,6 +3172,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
         hudMm24Val.textContent = st.mm24h.toFixed(1) + " מ״מ";
         hudProbVal.textContent = st.prob24h + "%";
         hudVerdictText.textContent = buildVerdictForCity(st);
+
+        if (sidebarCitiesList) {
+          while (sidebarCitiesList.firstChild) sidebarCitiesList.removeChild(sidebarCitiesList.firstChild);
+          CITIES.forEach(function (c) {
+            const cst = cityStats[c.id];
+            const row = document.createElement("button");
+            row.type = "button";
+            row.className = "sidebar-city-row" + (c.id === selectedCityId ? " active" : "");
+
+            const dot = document.createElement("span");
+            const lvl = getBadgeLevelClass(cst);
+            dot.className = "sidebar-city-dot" + (lvl ? " " + lvl : "");
+
+            const nameEl = document.createElement("span");
+            nameEl.className = "sidebar-city-name";
+            nameEl.textContent = c.name;
+
+            const mmEl = document.createElement("span");
+            mmEl.className = "sidebar-city-mm";
+            mmEl.textContent = cst.radarDbz >= 15
+              ? cst.radarDbz + " dBZ · " + cst.mm24h.toFixed(1) + " מ״מ"
+              : cst.mm24h.toFixed(1) + " מ״מ";
+
+            const probEl = document.createElement("span");
+            probEl.className = "sidebar-city-prob";
+            probEl.textContent = cst.prob24h + "%";
+
+            row.appendChild(dot);
+            row.appendChild(nameEl);
+            row.appendChild(mmEl);
+            row.appendChild(probEl);
+
+            row.addEventListener("click", function () {
+              selectCity(c.id, true);
+            });
+            sidebarCitiesList.appendChild(row);
+          });
+        }
       }
 
       function getFilteredAndSortedCities() {
