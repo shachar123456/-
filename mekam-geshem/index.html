@@ -914,15 +914,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       border-color: rgba(251, 191, 36, 0.35);
     }
 
-    /* City Chips Bar */
+    /* City Chips Bar (Shown Only Outside Map View since Map View has Dedicated Sidebar) */
     .cities-row {
-      pointer-events: auto;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow-x: auto;
-      padding: 2px 2px 4px;
-      scrollbar-width: none;
+      display: none;
     }
 
     .cities-row::-webkit-scrollbar {
@@ -1402,13 +1396,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       background: rgba(15, 23, 42, 0.72);
       color: var(--text-main);
       border-radius: 9px;
-      padding: 7px 10px;
+      padding: 8px 10px;
       font-family: inherit;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       display: grid;
-      grid-template-columns: auto 1fr auto auto;
+      grid-template-columns: 10px 1fr 56px 58px 42px;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       text-align: right;
       transition: background 0.14s ease, border-color 0.14s ease;
@@ -1449,21 +1443,73 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .sidebar-city-name {
       font-weight: 700;
       color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-city-dbz {
+      font-size: 0.71rem;
+      font-weight: 600;
+      color: #94a3b8;
+      direction: ltr;
+      unicode-bidi: isolate;
+      text-align: center;
+      background: rgba(30, 41, 59, 0.75);
+      border-radius: 6px;
+      padding: 2px 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sidebar-city-dbz.active-dbz {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.16);
     }
 
     .sidebar-city-mm {
       font-weight: 700;
       color: #7dd3fc;
       font-variant-numeric: tabular-nums;
-      font-size: 0.75rem;
+      font-size: 0.76rem;
+      text-align: left;
+      white-space: nowrap;
     }
 
     .sidebar-city-prob {
-      color: var(--text-muted);
+      color: #cbd5e1;
       font-variant-numeric: tabular-nums;
-      font-size: 0.72rem;
-      min-width: 32px;
+      font-size: 0.74rem;
       text-align: left;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    .sidebar-quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .sidebar-quick-btn {
+      appearance: none;
+      border: 1px solid var(--border-subtle);
+      background: rgba(30, 41, 59, 0.75);
+      color: #e2e8f0;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .sidebar-quick-btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: var(--accent);
     }
 
     .map-analysis-hud.collapsed .hud-body {
@@ -2101,6 +2147,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button type="button" class="hud-pill" data-layer-mode="mm24h">גשם 24 ש׳</button>
             <button type="button" class="hud-pill" data-layer-mode="prob24h">הסתברות</button>
             <button type="button" class="hud-pill" data-layer-mode="hidden">ללא נקודות</button>
+          </div>
+
+          <div class="sidebar-quick-actions">
+            <button type="button" class="sidebar-quick-btn" id="sidebarResetBtn" title="מרכז מפה לכל ישראל">🇮🇱 כל הארץ</button>
+            <button type="button" class="sidebar-quick-btn" id="sidebarLocateBtn" title="התמקד במיקום שלי">📍 המיקום שלי</button>
           </div>
 
           <div class="hud-city-box">
@@ -3166,9 +3217,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       function renderMapHud() {
         const st = cityStats[selectedCityId];
         if (!st || !hudCityName) return;
-        hudCityName.textContent = st.city.name + " (" + st.city.regionLabel + ")";
-        hudCityTemp.textContent = st.tempC.toFixed(1) + "°C · רוח " + Math.round(st.windKmh) + " קמ״ש";
-        hudRadarVal.textContent = st.radarDbz > 0 ? st.radarDbz + " dBZ (" + st.radarMmHr + " מ״מ/ש׳)" : "0 dBZ (יבש)";
+        hudCityName.textContent = st.city.name + " · " + st.city.regionLabel;
+        hudCityTemp.textContent = st.tempC.toFixed(1) + "°C | רוח " + Math.round(st.windKmh) + " קמ״ש";
+        hudRadarVal.textContent = st.radarDbz > 0 ? st.radarDbz + " dBZ" : "נקי (0)";
         hudMm24Val.textContent = st.mm24h.toFixed(1) + " מ״מ";
         hudProbVal.textContent = st.prob24h + "%";
         hudVerdictText.textContent = buildVerdictForCity(st);
@@ -3189,11 +3240,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
             nameEl.className = "sidebar-city-name";
             nameEl.textContent = c.name;
 
+            const dbzEl = document.createElement("span");
+            dbzEl.className = "sidebar-city-dbz" + (cst.radarDbz >= 12 ? " active-dbz" : "");
+            dbzEl.textContent = cst.radarDbz > 0 ? cst.radarDbz + " dBZ" : "יבש";
+
             const mmEl = document.createElement("span");
             mmEl.className = "sidebar-city-mm";
-            mmEl.textContent = cst.radarDbz >= 15
-              ? cst.radarDbz + " dBZ · " + cst.mm24h.toFixed(1) + " מ״מ"
-              : cst.mm24h.toFixed(1) + " מ״מ";
+            mmEl.textContent = cst.mm24h.toFixed(1) + " מ״מ";
 
             const probEl = document.createElement("span");
             probEl.className = "sidebar-city-prob";
@@ -3201,6 +3254,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
             row.appendChild(dot);
             row.appendChild(nameEl);
+            row.appendChild(dbzEl);
             row.appendChild(mmEl);
             row.appendChild(probEl);
 
@@ -3617,6 +3671,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
           renderMapHud();
           renderStatsView();
         }
+      }
+
+      const sidebarResetBtn = document.getElementById("sidebarResetBtn");
+      const sidebarLocateBtn = document.getElementById("sidebarLocateBtn");
+
+      if (sidebarResetBtn) {
+        sidebarResetBtn.addEventListener("click", function () {
+          switchView("map");
+          if (activeMarker) {
+            map.removeLayer(activeMarker);
+            activeMarker = null;
+          }
+          map.flyTo(ISRAEL_CENTER, DEFAULT_ZOOM, { duration: 0.9 });
+        });
+      }
+
+      if (sidebarLocateBtn) {
+        sidebarLocateBtn.addEventListener("click", function () {
+          locateBtn.click();
+        });
       }
 
       // Wire HUD & Statistics interactive controls
