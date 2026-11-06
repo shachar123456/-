@@ -710,21 +710,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
       user-select: none;
     }
 
-    /* Layout Container */
+    /* Layout Container: True Flex Column (No Overlapping Top Bars) */
     .app-shell {
       position: relative;
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    /* Views */
+    /* Top Header & City Selector Bar (Fixed Top Flow, Never Overlaps Content) */
+    .top-overlay {
+      position: relative;
+      z-index: 950;
+      flex-shrink: 0;
+      background: rgba(8, 13, 24, 0.96);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: max(8px, env(safe-area-inset-top)) 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Views (Fill Remaining Height Below Top Bar Cleanly) */
     .view-panel {
-      position: absolute;
-      inset: 0;
+      position: relative;
+      flex: 1;
+      min-height: 0;
       width: 100%;
-      height: 100%;
       display: none;
       z-index: 1;
     }
@@ -742,35 +765,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Keep radar tiles crisp & properly blended */
     .leaflet-container img.leaflet-tile {
       mix-blend-mode: normal;
-    }
-
-    /* Top Header Overlay */
-    .top-overlay {
-      position: absolute;
-      top: max(12px, env(safe-area-inset-top));
-      right: 12px;
-      left: 12px;
-      z-index: 900;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
-    }
-
-    .header-bar {
-      pointer-events: auto;
-      background: var(--bg-glass);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 10px 14px;
-      box-shadow: var(--shadow-lg);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
     }
 
     .brand-group {
@@ -1132,10 +1126,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       display: none !important;
     }
 
-    /* Secondary Views: IMS & Windy */
+    /* Secondary Views: Stats, IMS & Windy */
     .secondary-panel {
+      height: 100%;
       background: radial-gradient(circle at 50% 20%, #0f172a 0%, #070b13 100%);
-      padding: 150px 16px 24px;
+      padding: 20px 16px 32px;
       overflow-y: auto;
     }
 
@@ -1258,84 +1253,130 @@ svg.leaflet-image-layer.leaflet-interactive path {
       background-color: rgba(30, 41, 59, 0.95) !important;
     }
 
-    /* Map City Badges & Floating Map-Forecast Analysis Card */
-    .city-map-badge {
-      background: rgba(9, 15, 27, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.35);
+    /* Map City Pin & Non-Overlapping Label */
+    .city-map-pin-wrap {
+      position: relative;
+      width: 12px;
+      height: 12px;
+      transform: translate(-6px, -6px);
+      cursor: pointer;
+    }
+
+    .city-map-pin-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #475569;
+      border: 2px solid #f8fafc;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .city-map-pin-wrap.lvl-rain .city-map-pin-dot {
+      background: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+    }
+
+    .city-map-pin-wrap.lvl-mod .city-map-pin-dot {
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.85);
+    }
+
+    .city-map-pin-wrap.lvl-heavy .city-map-pin-dot {
+      background: #eab308;
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.95);
+    }
+
+    .city-map-pin-wrap.selected .city-map-pin-dot {
+      transform: scale(1.35);
+      border-color: #fff;
+      background: #0284c7;
+      box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.35);
+    }
+
+    .city-map-label {
+      position: absolute;
+      top: 50%;
+      background: rgba(9, 15, 27, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.32);
       border-radius: 999px;
-      padding: 3px 8px;
+      padding: 2px 7px;
       color: #f8fafc;
       font-family: var(--font-sans);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
-      transform: translate(-50%, -50%);
-      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      cursor: pointer;
+      gap: 4px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
+      pointer-events: auto;
+      transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
-    .city-map-badge:hover,
-    .city-map-badge.selected {
+    .city-map-label.dir-left {
+      right: 16px;
+      transform: translateY(-50%);
+    }
+
+    .city-map-label.dir-right {
+      left: 16px;
+      transform: translateY(-50%);
+    }
+
+    .city-map-label.dir-top {
+      left: 50%;
+      bottom: 15px;
+      top: auto;
+      transform: translateX(-50%);
+    }
+
+    .city-map-label.dir-bottom {
+      left: 50%;
+      top: 15px;
+      transform: translateX(-50%);
+    }
+
+    /* Hide secondary city text labels at low zoom unless hovered or selected */
+    .city-map-pin-wrap.minor-label:not(.selected):not(:hover) .city-map-label {
+      display: none;
+    }
+
+    .city-map-pin-wrap.selected .city-map-label,
+    .city-map-pin-wrap:hover .city-map-label {
       border-color: var(--accent);
-      background: rgba(2, 132, 199, 0.92);
-      transform: translate(-50%, -50%) scale(1.08);
-      z-index: 950;
+      background: rgba(2, 132, 199, 0.95);
+      z-index: 980;
     }
 
-    .city-map-badge .badge-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #64748b;
-      flex-shrink: 0;
-    }
-
-    .city-map-badge.lvl-rain .badge-dot {
-      background: #38bdf8;
-      box-shadow: 0 0 7px #38bdf8;
-    }
-
-    .city-map-badge.lvl-mod .badge-dot {
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
-    }
-
-    .city-map-badge.lvl-heavy .badge-dot {
-      background: #eab308;
-      box-shadow: 0 0 9px #eab308;
-    }
-
-    .city-map-badge .badge-val {
+    .city-map-label .badge-val {
       color: #7dd3fc;
       font-variant-numeric: tabular-nums;
       font-weight: 700;
     }
 
-    .city-map-badge.selected .badge-val {
+    .city-map-pin-wrap.selected .city-map-label .badge-val,
+    .city-map-pin-wrap:hover .city-map-label .badge-val {
       color: #fff;
     }
 
-    /* Floating Map Analysis HUD Card (Right side of map) */
+    /* Floating Map Analysis HUD Card (Top-Right of Map Canvas, Away from Bottom Dock) */
     .map-analysis-hud {
       position: absolute;
       right: 12px;
-      bottom: calc(108px + env(safe-area-inset-bottom));
+      top: 12px;
       z-index: 850;
-      width: min(350px, calc(100vw - 24px));
+      width: min(310px, calc(100vw - 24px));
       background: var(--bg-glass-strong);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 12px 14px;
+      padding: 10px 12px;
       box-shadow: var(--shadow-lg);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       pointer-events: auto;
       transition: all 0.2s ease;
     }
@@ -1869,9 +1910,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     /* Responsive adjustments */
     @media (max-width: 760px) {
+      .top-overlay {
+        padding: max(6px, env(safe-area-inset-top)) 10px 6px;
+        gap: 6px;
+      }
       .header-bar {
-        padding: 8px 10px;
-        gap: 8px;
+        gap: 6px;
       }
       .brand-sub {
         display: none;
@@ -1893,13 +1937,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         flex: 1;
       }
       .side-floating {
-        bottom: calc(142px + env(safe-area-inset-bottom));
+        bottom: calc(134px + env(safe-area-inset-bottom));
       }
       .panel-inner {
         grid-template-columns: 1fr;
       }
       .secondary-panel {
-        padding-top: 165px;
+        padding: 14px 12px 28px;
       }
       .stats-kpi-grid {
         grid-template-columns: 1fr 1fr;
@@ -1908,10 +1952,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         grid-template-columns: 1fr;
       }
       .map-analysis-hud {
-        right: 12px;
-        left: 12px;
+        right: 10px;
+        left: 10px;
+        top: 10px;
         width: auto;
-        bottom: calc(146px + env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -2204,18 +2248,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
       const CITIES = [
-        { id: "jerusalem", name: "ירושלים", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.7683, lon: 35.2137, novAvgMm: 60, annualAvgMm: 535, fallbackTemp: 15.2, fallbackWind: 14, fallbackMm24: 1.4, fallbackProb24: 52, fallbackMm7d: 6.8, fallbackHours7d: 5 },
-        { id: "tel-aviv", name: "תל אביב", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.0853, lon: 34.7818, novAvgMm: 72, annualAvgMm: 530, fallbackTemp: 20.4, fallbackWind: 17, fallbackMm24: 2.1, fallbackProb24: 60, fallbackMm7d: 9.4, fallbackHours7d: 6 },
-        { id: "haifa", name: "חיפה", region: "north", regionLabel: "צפון והגליל", lat: 32.7940, lon: 34.9896, novAvgMm: 78, annualAvgMm: 540, fallbackTemp: 19.6, fallbackWind: 19, fallbackMm24: 3.6, fallbackProb24: 72, fallbackMm7d: 14.2, fallbackHours7d: 8 },
-        { id: "safed", name: "צפת", region: "north", regionLabel: "צפון והגליל", lat: 32.9646, lon: 35.4960, novAvgMm: 92, annualAvgMm: 710, fallbackTemp: 13.8, fallbackWind: 16, fallbackMm24: 4.5, fallbackProb24: 78, fallbackMm7d: 18.5, fallbackHours7d: 10 },
-        { id: "nahariya", name: "נהריה", region: "north", regionLabel: "צפון והגליל", lat: 33.0059, lon: 35.0941, novAvgMm: 85, annualAvgMm: 615, fallbackTemp: 19.8, fallbackWind: 21, fallbackMm24: 4.2, fallbackProb24: 76, fallbackMm7d: 16.9, fallbackHours7d: 9 },
-        { id: "tiberias", name: "טבריה", region: "north", regionLabel: "צפון והגליל", lat: 32.7922, lon: 35.5312, novAvgMm: 48, annualAvgMm: 420, fallbackTemp: 22.1, fallbackWind: 12, fallbackMm24: 2.4, fallbackProb24: 64, fallbackMm7d: 10.1, fallbackHours7d: 6 },
-        { id: "nazareth", name: "נצרת", region: "north", regionLabel: "צפון והגליל", lat: 32.6996, lon: 35.3035, novAvgMm: 72, annualAvgMm: 580, fallbackTemp: 17.5, fallbackWind: 15, fallbackMm24: 3.1, fallbackProb24: 68, fallbackMm7d: 12.8, fallbackHours7d: 7 },
-        { id: "netanya", name: "נתניה", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.3215, lon: 34.8532, novAvgMm: 76, annualAvgMm: 550, fallbackTemp: 20.1, fallbackWind: 18, fallbackMm24: 2.6, fallbackProb24: 65, fallbackMm7d: 11.2, fallbackHours7d: 7 },
-        { id: "rehovot", name: "רחובות", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.8928, lon: 34.8113, novAvgMm: 66, annualAvgMm: 525, fallbackTemp: 19.9, fallbackWind: 13, fallbackMm24: 1.7, fallbackProb24: 55, fallbackMm7d: 7.9, fallbackHours7d: 5 },
-        { id: "ashdod", name: "אשדוד", region: "center", regionLabel: "מרכז ומישור החוף", lat: 31.8044, lon: 34.6553, novAvgMm: 62, annualAvgMm: 480, fallbackTemp: 20.5, fallbackWind: 16, fallbackMm24: 1.5, fallbackProb24: 50, fallbackMm7d: 7.2, fallbackHours7d: 5 },
-        { id: "beer-sheva", name: "באר שבע", region: "south", regionLabel: "דרום ונגב", lat: 31.2518, lon: 34.7913, novAvgMm: 22, annualAvgMm: 195, fallbackTemp: 19.3, fallbackWind: 14, fallbackMm24: 0.4, fallbackProb24: 28, fallbackMm7d: 2.1, fallbackHours7d: 2 },
-        { id: "eilat", name: "אילת", region: "south", regionLabel: "דרום ונגב", lat: 29.5577, lon: 34.9519, novAvgMm: 3, annualAvgMm: 22, fallbackTemp: 25.4, fallbackWind: 18, fallbackMm24: 0.0, fallbackProb24: 8, fallbackMm7d: 0.2, fallbackHours7d: 0 }
+        { id: "jerusalem", name: "ירושלים", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.7683, lon: 35.2137, labelDir: "right", majorOnLowZoom: true, novAvgMm: 60, annualAvgMm: 535, fallbackTemp: 15.2, fallbackWind: 14, fallbackMm24: 1.4, fallbackProb24: 52, fallbackMm7d: 6.8, fallbackHours7d: 5 },
+        { id: "tel-aviv", name: "תל אביב", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.0853, lon: 34.7818, labelDir: "left", majorOnLowZoom: true, novAvgMm: 72, annualAvgMm: 530, fallbackTemp: 20.4, fallbackWind: 17, fallbackMm24: 2.1, fallbackProb24: 60, fallbackMm7d: 9.4, fallbackHours7d: 6 },
+        { id: "haifa", name: "חיפה", region: "north", regionLabel: "צפון והגליל", lat: 32.7940, lon: 34.9896, labelDir: "left", majorOnLowZoom: true, novAvgMm: 78, annualAvgMm: 540, fallbackTemp: 19.6, fallbackWind: 19, fallbackMm24: 3.6, fallbackProb24: 72, fallbackMm7d: 14.2, fallbackHours7d: 8 },
+        { id: "safed", name: "צפת", region: "north", regionLabel: "צפון והגליל", lat: 32.9646, lon: 35.4960, labelDir: "top", majorOnLowZoom: true, novAvgMm: 92, annualAvgMm: 710, fallbackTemp: 13.8, fallbackWind: 16, fallbackMm24: 4.5, fallbackProb24: 78, fallbackMm7d: 18.5, fallbackHours7d: 10 },
+        { id: "nahariya", name: "נהריה", region: "north", regionLabel: "צפון והגליל", lat: 33.0059, lon: 35.0941, labelDir: "left", majorOnLowZoom: false, novAvgMm: 85, annualAvgMm: 615, fallbackTemp: 19.8, fallbackWind: 21, fallbackMm24: 4.2, fallbackProb24: 76, fallbackMm7d: 16.9, fallbackHours7d: 9 },
+        { id: "tiberias", name: "טבריה", region: "north", regionLabel: "צפון והגליל", lat: 32.7922, lon: 35.5312, labelDir: "right", majorOnLowZoom: true, novAvgMm: 48, annualAvgMm: 420, fallbackTemp: 22.1, fallbackWind: 12, fallbackMm24: 2.4, fallbackProb24: 64, fallbackMm7d: 10.1, fallbackHours7d: 6 },
+        { id: "nazareth", name: "נצרת", region: "north", regionLabel: "צפון והגליל", lat: 32.6996, lon: 35.3035, labelDir: "bottom", majorOnLowZoom: false, novAvgMm: 72, annualAvgMm: 580, fallbackTemp: 17.5, fallbackWind: 15, fallbackMm24: 3.1, fallbackProb24: 68, fallbackMm7d: 12.8, fallbackHours7d: 7 },
+        { id: "netanya", name: "נתניה", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.3215, lon: 34.8532, labelDir: "left", majorOnLowZoom: false, novAvgMm: 76, annualAvgMm: 550, fallbackTemp: 20.1, fallbackWind: 18, fallbackMm24: 2.6, fallbackProb24: 65, fallbackMm7d: 11.2, fallbackHours7d: 7 },
+        { id: "rehovot", name: "רחובות", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.8928, lon: 34.8113, labelDir: "bottom", majorOnLowZoom: false, novAvgMm: 66, annualAvgMm: 525, fallbackTemp: 19.9, fallbackWind: 13, fallbackMm24: 1.7, fallbackProb24: 55, fallbackMm7d: 7.9, fallbackHours7d: 5 },
+        { id: "ashdod", name: "אשדוד", region: "center", regionLabel: "מרכז ומישור החוף", lat: 31.8044, lon: 34.6553, labelDir: "left", majorOnLowZoom: false, novAvgMm: 62, annualAvgMm: 480, fallbackTemp: 20.5, fallbackWind: 16, fallbackMm24: 1.5, fallbackProb24: 50, fallbackMm7d: 7.2, fallbackHours7d: 5 },
+        { id: "beer-sheva", name: "באר שבע", region: "south", regionLabel: "דרום ונגב", lat: 31.2518, lon: 34.7913, labelDir: "bottom", majorOnLowZoom: true, novAvgMm: 22, annualAvgMm: 195, fallbackTemp: 19.3, fallbackWind: 14, fallbackMm24: 0.4, fallbackProb24: 28, fallbackMm7d: 2.1, fallbackHours7d: 2 },
+        { id: "eilat", name: "אילת", region: "south", regionLabel: "דרום ונגב", lat: 29.5577, lon: 34.9519, labelDir: "top", majorOnLowZoom: true, novAvgMm: 3, annualAvgMm: 22, fallbackTemp: 25.4, fallbackWind: 18, fallbackMm24: 0.0, fallbackProb24: 8, fallbackMm7d: 0.2, fallbackHours7d: 0 }
       ];
 
       // Per-city dynamic state combining Map Radar Analysis + Meteorological Forecast
@@ -2442,9 +2486,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
           return st.prob24h + "%";
         }
         if (st.radarDbz >= 15) {
-          return st.radarDbz + " dBZ · " + st.mm24h.toFixed(1) + " מ״מ";
+          return st.radarDbz + " dBZ";
         }
-        return st.mm24h.toFixed(1) + " מ״מ · " + st.prob24h + "%";
+        if (st.mm24h >= 0.2) {
+          return st.mm24h.toFixed(1) + " מ״מ";
+        }
+        return st.prob24h + "%";
       }
 
       function getBadgeLevelClass(st) {
@@ -2455,6 +2502,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
 
       function updateMapCityBadges() {
+        const currentZoom = map ? map.getZoom() : DEFAULT_ZOOM;
         CITIES.forEach(function (city) {
           const marker = cityMapMarkers[city.id];
           if (!marker) return;
@@ -2468,12 +2516,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
           }
 
           const st = cityStats[city.id];
-          const badge = document.createElement("div");
           const lvl = getBadgeLevelClass(st);
-          badge.className = "city-map-badge" + (lvl ? " " + lvl : "") + (city.id === selectedCityId ? " selected" : "");
+          const isSelected = city.id === selectedCityId;
+          const isMinorAtZoom = currentZoom < 9 && !city.majorOnLowZoom && !isSelected;
 
-          const dot = document.createElement("span");
-          dot.className = "badge-dot";
+          const wrap = document.createElement("div");
+          wrap.className =
+            "city-map-pin-wrap" +
+            (lvl ? " " + lvl : "") +
+            (isSelected ? " selected" : "") +
+            (isMinorAtZoom ? " minor-label" : "");
+          wrap.title = city.name + " — " + formatBadgeValue(st);
+
+          const dot = document.createElement("div");
+          dot.className = "city-map-pin-dot";
+          wrap.appendChild(dot);
+
+          const label = document.createElement("div");
+          label.className = "city-map-label dir-" + (city.labelDir || "right");
 
           const nameSpan = document.createElement("span");
           nameSpan.textContent = city.name;
@@ -2482,12 +2542,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
           valSpan.className = "badge-val";
           valSpan.textContent = formatBadgeValue(st);
 
-          badge.appendChild(dot);
-          badge.appendChild(nameSpan);
-          badge.appendChild(valSpan);
-          el.appendChild(badge);
+          label.appendChild(nameSpan);
+          label.appendChild(valSpan);
+          wrap.appendChild(label);
+          el.appendChild(wrap);
         });
       }
+
+      map.on("zoomend", updateMapCityBadges);
 
       const resetChip = citiesBar.querySelector('[data-reset="true"]');
       if (resetChip) {
