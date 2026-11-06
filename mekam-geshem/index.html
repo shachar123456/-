@@ -710,64 +710,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
       user-select: none;
     }
 
-    /* Layout Container: True Flex Column (No Overlapping Top Bars) */
+    /* Layout Container */
     .app-shell {
       position: relative;
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
-    /* Top Header & City Selector Bar (Fixed Top Flow, Never Overlaps Content) */
-    .top-overlay {
-      position: relative;
-      z-index: 950;
-      flex-shrink: 0;
-      background: rgba(8, 13, 24, 0.96);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: max(8px, env(safe-area-inset-top)) 14px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-    }
-
-    .header-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    /* Views (Fill Remaining Height Below Top Bar Cleanly) */
+    /* Views */
     .view-panel {
-      position: relative;
-      flex: 1;
-      min-height: 0;
+      position: absolute;
+      inset: 0;
       width: 100%;
+      height: 100%;
       display: none;
       z-index: 1;
     }
 
     .view-panel.active {
       display: block;
-    }
-
-    /* Map View Split Grid: Dedicated Right Sidebar + Clean Full-Height Map Canvas */
-    #viewMap.active {
-      display: grid;
-      grid-template-columns: 332px 1fr;
-    }
-
-    .map-stage {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
     }
 
     #map {
@@ -779,6 +742,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Keep radar tiles crisp & properly blended */
     .leaflet-container img.leaflet-tile {
       mix-blend-mode: normal;
+    }
+
+    /* Top Header Overlay */
+    .top-overlay {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      right: 12px;
+      left: 12px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .header-bar {
+      pointer-events: auto;
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 10px 14px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .brand-group {
@@ -914,9 +906,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       border-color: rgba(251, 191, 36, 0.35);
     }
 
-    /* City Chips Bar (Shown Only Outside Map View since Map View has Dedicated Sidebar) */
+    /* City Chips Bar */
     .cities-row {
-      display: none;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 2px 4px;
+      scrollbar-width: none;
     }
 
     .cities-row::-webkit-scrollbar {
@@ -1134,11 +1132,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       display: none !important;
     }
 
-    /* Secondary Views: Stats, IMS & Windy */
+    /* Secondary Views: IMS & Windy */
     .secondary-panel {
-      height: 100%;
       background: radial-gradient(circle at 50% 20%, #0f172a 0%, #070b13 100%);
-      padding: 20px 16px 32px;
+      padding: 150px 16px 24px;
       overflow-y: auto;
     }
 
@@ -1261,792 +1258,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       background-color: rgba(30, 41, 59, 0.95) !important;
     }
 
-    /* Map City Pin & Non-Overlapping Label */
-    .city-map-pin-wrap {
-      position: relative;
-      width: 12px;
-      height: 12px;
-      transform: translate(-6px, -6px);
-      cursor: pointer;
-    }
-
-    .city-map-pin-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #475569;
-      border: 2px solid #f8fafc;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .city-map-pin-wrap.lvl-rain .city-map-pin-dot {
-      background: #38bdf8;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
-    }
-
-    .city-map-pin-wrap.lvl-mod .city-map-pin-dot {
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.85);
-    }
-
-    .city-map-pin-wrap.lvl-heavy .city-map-pin-dot {
-      background: #eab308;
-      box-shadow: 0 0 12px rgba(234, 179, 8, 0.95);
-    }
-
-    .city-map-pin-wrap.selected .city-map-pin-dot {
-      transform: scale(1.35);
-      border-color: #fff;
-      background: #0284c7;
-      box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.35);
-    }
-
-    .city-map-label {
-      position: absolute;
-      top: 50%;
-      background: rgba(9, 15, 27, 0.92);
-      border: 1px solid rgba(148, 163, 184, 0.32);
-      border-radius: 999px;
-      padding: 2px 7px;
-      color: #f8fafc;
-      font-family: var(--font-sans);
-      font-size: 0.7rem;
-      font-weight: 600;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
-      pointer-events: auto;
-      transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-
-    .city-map-label.dir-left {
-      right: 16px;
-      transform: translateY(-50%);
-    }
-
-    .city-map-label.dir-right {
-      left: 16px;
-      transform: translateY(-50%);
-    }
-
-    .city-map-label.dir-top {
-      left: 50%;
-      bottom: 15px;
-      top: auto;
-      transform: translateX(-50%);
-    }
-
-    .city-map-label.dir-bottom {
-      left: 50%;
-      top: 15px;
-      transform: translateX(-50%);
-    }
-
-    /* Hide city text labels unless selected or hovered so the map is never cluttered */
-    .city-map-pin-wrap:not(.selected):not(:hover) .city-map-label {
-      display: none;
-    }
-
-    .city-map-pin-wrap.selected .city-map-label,
-    .city-map-pin-wrap:hover .city-map-label {
-      border-color: var(--accent);
-      background: rgba(2, 132, 199, 0.95);
-      z-index: 980;
-    }
-
-    .city-map-label .badge-val {
-      color: #7dd3fc;
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-    }
-
-    .city-map-pin-wrap.selected .city-map-label .badge-val,
-    .city-map-pin-wrap:hover .city-map-label .badge-val {
-      color: #fff;
-    }
-
-    /* Dedicated Right Sidebar Panel (Does Not Cover Map) */
-    .map-analysis-hud {
-      background: rgba(9, 15, 27, 0.98);
-      border-left: 1px solid var(--border-subtle);
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow-y: auto;
-      z-index: 20;
-    }
-
-    .sidebar-cities-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      flex: 1;
-      overflow-y: auto;
-      min-height: 120px;
-      padding-left: 2px;
-    }
-
-    .sidebar-city-row {
-      appearance: none;
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      background: rgba(15, 23, 42, 0.72);
-      color: var(--text-main);
-      border-radius: 9px;
-      padding: 8px 10px;
-      font-family: inherit;
-      font-size: 0.8rem;
-      display: grid;
-      grid-template-columns: 10px 1fr 56px 58px 42px;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      text-align: right;
-      transition: background 0.14s ease, border-color 0.14s ease;
-    }
-
-    .sidebar-city-row:hover {
-      background: rgba(30, 41, 59, 0.85);
-      border-color: rgba(148, 163, 184, 0.35);
-    }
-
-    .sidebar-city-row.active {
-      background: rgba(2, 132, 199, 0.28);
-      border-color: var(--accent);
-    }
-
-    .sidebar-city-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #475569;
-    }
-
-    .sidebar-city-dot.lvl-rain {
-      background: #38bdf8;
-      box-shadow: 0 0 6px #38bdf8;
-    }
-
-    .sidebar-city-dot.lvl-mod {
-      background: #22c55e;
-      box-shadow: 0 0 7px #22c55e;
-    }
-
-    .sidebar-city-dot.lvl-heavy {
-      background: #eab308;
-      box-shadow: 0 0 8px #eab308;
-    }
-
-    .sidebar-city-name {
-      font-weight: 700;
-      color: #f8fafc;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .sidebar-city-dbz {
-      font-size: 0.71rem;
-      font-weight: 600;
-      color: #94a3b8;
-      direction: ltr;
-      unicode-bidi: isolate;
-      text-align: center;
-      background: rgba(30, 41, 59, 0.75);
-      border-radius: 6px;
-      padding: 2px 4px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .sidebar-city-dbz.active-dbz {
-      color: #38bdf8;
-      background: rgba(56, 189, 248, 0.16);
-    }
-
-    .sidebar-city-mm {
-      font-weight: 700;
-      color: #7dd3fc;
-      font-variant-numeric: tabular-nums;
-      font-size: 0.76rem;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .sidebar-city-prob {
-      color: #cbd5e1;
-      font-variant-numeric: tabular-nums;
-      font-size: 0.74rem;
-      text-align: left;
-      direction: ltr;
-      unicode-bidi: isolate;
-    }
-
-    .sidebar-quick-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .sidebar-quick-btn {
-      appearance: none;
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.75);
-      color: #e2e8f0;
-      font-family: inherit;
-      font-size: 0.76rem;
-      font-weight: 600;
-      padding: 6px 8px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-    }
-
-    .sidebar-quick-btn:hover {
-      background: rgba(51, 65, 85, 0.9);
-      border-color: var(--accent);
-    }
-
-    .map-analysis-hud.collapsed .hud-body {
-      display: none;
-    }
-
-    .hud-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .hud-title {
-      font-size: 0.84rem;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 0;
-    }
-
-    .hud-toggle-btn {
-      appearance: none;
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.8);
-      color: var(--text-muted);
-      border-radius: 6px;
-      padding: 3px 8px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      cursor: pointer;
-    }
-
-    .hud-toggle-btn:hover {
-      color: #fff;
-      border-color: var(--accent);
-    }
-
-    .hud-layer-pills {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    .hud-pill {
-      appearance: none;
-      border: 1px solid var(--border-subtle);
-      background: rgba(15, 23, 42, 0.75);
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.14s ease;
-    }
-
-    .hud-pill.active {
-      background: rgba(2, 132, 199, 0.35);
-      border-color: var(--accent);
-      color: #e0f2fe;
-    }
-
-    .hud-city-box {
-      background: rgba(15, 23, 42, 0.75);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 9px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .hud-city-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-    }
-
-    .hud-city-name {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .hud-city-temp {
-      font-size: 0.78rem;
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .hud-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      text-align: center;
-    }
-
-    .hud-metric-cell {
-      background: rgba(30, 41, 59, 0.55);
-      border-radius: 8px;
-      padding: 5px 4px;
-    }
-
-    .hud-metric-val {
-      display: block;
-      font-size: 0.84rem;
-      font-weight: 700;
-      color: #f8fafc;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hud-metric-lbl {
-      display: block;
-      font-size: 0.67rem;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
-
-    .hud-verdict {
-      font-size: 0.74rem;
-      color: #bae6fd;
-      line-height: 1.35;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-    }
-
-    .hud-open-stats-btn {
-      appearance: none;
-      border: 1px solid var(--border-bright);
-      background: rgba(2, 132, 199, 0.24);
-      color: #e0f2fe;
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-      text-align: center;
-    }
-
-    .hud-open-stats-btn:hover {
-      background: rgba(2, 132, 199, 0.42);
-    }
-
-    /* Dedicated Statistics & Forecast Analysis Panel */
-    .stats-container {
-      max-width: 1120px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding-bottom: 32px;
-    }
-
-    .stats-kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-
-    .kpi-card {
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 13px 15px;
-      box-shadow: var(--shadow-lg);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .kpi-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-
-    .kpi-value {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #fff;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .kpi-sub {
-      font-size: 0.74rem;
-      color: var(--accent);
-    }
-
-    /* Controls Bar inside Stats View */
-    .stats-toolbar {
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .filter-label {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      margin-left: 4px;
-    }
-
-    .filter-btn {
-      appearance: none;
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.75);
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 5px 11px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .filter-btn:hover {
-      border-color: rgba(148, 163, 184, 0.45);
-    }
-
-    .filter-btn.active {
-      background: var(--accent-strong);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    /* City Spotlight Analysis Grid (Map vs Forecast + 24h Curve + 7d Outlook) */
-    .spotlight-grid {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 16px;
-    }
-
-    .stats-card {
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      box-shadow: var(--shadow-lg);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .stats-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .stats-card-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .stats-card-sub {
-      margin: 0;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-
-    /* 24-Hour Hourly Forecast Mini-Chart */
-    .hourly-bars {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 6px;
-      align-items: end;
-      height: 132px;
-      padding-top: 18px;
-      border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 6px;
-    }
-
-    .hour-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      height: 100%;
-      gap: 4px;
-    }
-
-    .hour-val {
-      font-size: 0.66rem;
-      color: #bae6fd;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hour-bar-wrap {
-      width: 100%;
-      max-width: 24px;
-      height: 78px;
-      background: rgba(30, 41, 59, 0.65);
-      border-radius: 6px 6px 2px 2px;
-      display: flex;
-      align-items: flex-end;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .hour-bar-fill {
-      width: 100%;
-      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
-      border-radius: 6px 6px 0 0;
-      transition: height 0.25s ease;
-    }
-
-    .hour-time {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 7-Day Daily Forecast Strip */
-    .daily-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .daily-row {
-      display: grid;
-      grid-template-columns: 86px 1fr 68px 66px;
-      align-items: center;
-      gap: 8px;
-      background: rgba(30, 41, 59, 0.48);
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 10px;
-      padding: 7px 10px;
-      font-size: 0.79rem;
-    }
-
-    .daily-day {
-      font-weight: 700;
-      color: #f8fafc;
-    }
-
-    .daily-prob-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .daily-prob-bar {
-      flex: 1;
-      height: 7px;
-      background: rgba(15, 23, 42, 0.8);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .daily-prob-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #0284c7, #38bdf8);
-      border-radius: 999px;
-    }
-
-    .daily-prob-txt {
-      font-size: 0.73rem;
-      color: #7dd3fc;
-      width: 34px;
-      text-align: left;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .daily-mm {
-      text-align: left;
-      font-weight: 700;
-      color: #fff;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .daily-temp {
-      text-align: left;
-      font-size: 0.73rem;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Comparative Cities Table */
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    .cities-stats-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-      text-align: right;
-    }
-
-    .cities-stats-table th {
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.74rem;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border-subtle);
-      white-space: nowrap;
-    }
-
-    .cities-stats-table td {
-      padding: 10px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-      vertical-align: middle;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .cities-stats-table tbody tr {
-      cursor: pointer;
-      transition: background 0.14s ease;
-    }
-
-    .cities-stats-table tbody tr:hover {
-      background: rgba(30, 41, 59, 0.6);
-    }
-
-    .cities-stats-table tbody tr.selected-row {
-      background: rgba(2, 132, 199, 0.22);
-    }
-
-    .city-cell-main {
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .region-tag {
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(51, 65, 85, 0.8);
-      color: #cbd5e1;
-    }
-
-    .bar-inline-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 120px;
-    }
-
-    .bar-track {
-      flex: 1;
-      height: 7px;
-      background: rgba(30, 41, 59, 0.9);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #38bdf8, #22c55e);
-      border-radius: 999px;
-    }
-
-    .bar-fill.clim {
-      background: linear-gradient(90deg, #818cf8, #38bdf8);
-    }
-
-    .radar-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 0.73rem;
-      font-weight: 600;
-      background: rgba(30, 41, 59, 0.85);
-      color: #94a3b8;
-    }
-
-    .radar-pill.active-echo {
-      background: rgba(56, 189, 248, 0.18);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.35);
-    }
-
-    .btn-table-map {
-      appearance: none;
-      border: 1px solid var(--border-bright);
-      background: rgba(2, 132, 199, 0.18);
-      color: #bae6fd;
-      font-family: inherit;
-      font-size: 0.74rem;
-      font-weight: 600;
-      padding: 4px 9px;
-      border-radius: 7px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-table-map:hover {
-      background: rgba(2, 132, 199, 0.4);
-      color: #fff;
-    }
-
     /* Responsive adjustments */
     @media (max-width: 760px) {
-      .top-overlay {
-        padding: max(6px, env(safe-area-inset-top)) 10px 6px;
-        gap: 6px;
-      }
       .header-bar {
-        gap: 6px;
+        padding: 8px 10px;
+        gap: 8px;
       }
       .brand-sub {
         display: none;
@@ -2068,31 +1284,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         flex: 1;
       }
       .side-floating {
-        bottom: calc(134px + env(safe-area-inset-bottom));
+        bottom: calc(142px + env(safe-area-inset-bottom));
       }
       .panel-inner {
         grid-template-columns: 1fr;
       }
       .secondary-panel {
-        padding: 14px 12px 28px;
-      }
-      .stats-kpi-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-      .spotlight-grid {
-        grid-template-columns: 1fr;
-      }
-      #viewMap.active {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-      }
-      .map-analysis-hud {
-        border-left: 0;
-        border-bottom: 1px solid var(--border-subtle);
-        max-height: 220px;
-      }
-      .sidebar-cities-list {
-        display: none;
+        padding-top: 165px;
       }
     }
   </style>
@@ -2106,14 +1304,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="brand-icon" aria-hidden="true">🌧️</div>
           <div>
             <h1 class="brand-title">מכ״ם גשם ישראל</h1>
-            <p class="brand-sub">ניתוח משקעים לפי מפת מכ״ם ולפי תחזית ערים · שעון ישראל</p>
+            <p class="brand-sub">מפת משקעים חיה · שעון ישראל (Asia/Jerusalem)</p>
           </div>
         </div>
 
-        <div class="mode-tabs" role="tablist" aria-label="תצוגת מכ״ם וסטטיסטיקה">
-          <button type="button" class="mode-tab active" data-view="map" role="tab" aria-selected="true">🗺️ מפה חיה + ערים</button>
-          <button type="button" class="mode-tab" data-view="stats" role="tab" aria-selected="false">📊 סטטיסטיקה ותחזית ערים</button>
-          <button type="button" class="mode-tab" data-view="fallback" role="tab" aria-selected="false">📡 מכ״ם השמ״ט / Windy</button>
+        <div class="mode-tabs" role="tablist" aria-label="תצוגת מכ״ם">
+          <button type="button" class="mode-tab active" data-view="map" role="tab" aria-selected="true">מפה חיה</button>
+          <button type="button" class="mode-tab" data-view="fallback" role="tab" aria-selected="false">מכ״ם השמ״ט / Windy</button>
         </div>
 
         <div class="status-cluster">
@@ -2133,202 +1330,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="toastBanner" class="toast-banner" role="status" hidden></div>
     </header>
 
-    <!-- Primary Interactive Map View (Clean Split: Right Sidebar + Full Map Stage) -->
+    <!-- Primary Interactive Map View -->
     <main id="viewMap" class="view-panel active">
-      <!-- Dedicated Right Sidebar for City Map + Forecast Analysis -->
-      <aside class="map-analysis-hud" id="mapAnalysisHud" aria-label="ניתוח גשם לפי מפה ותחזית">
-        <div class="hud-header">
-          <h2 class="hud-title">📊 ניתוח ערים: מפה + תחזית</h2>
-          <button type="button" class="hud-toggle-btn" id="hudCollapseBtn" aria-expanded="true">מזער</button>
-        </div>
-        <div class="hud-body" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;">
-          <div class="hud-layer-pills" id="mapLayerPills" role="group" aria-label="שכבת נתוני ערים על המפה">
-            <button type="button" class="hud-pill active" data-layer-mode="combined">מכ״ם + תחזית</button>
-            <button type="button" class="hud-pill" data-layer-mode="mm24h">גשם 24 ש׳</button>
-            <button type="button" class="hud-pill" data-layer-mode="prob24h">הסתברות</button>
-            <button type="button" class="hud-pill" data-layer-mode="hidden">ללא נקודות</button>
-          </div>
+      <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
 
-          <div class="sidebar-quick-actions">
-            <button type="button" class="sidebar-quick-btn" id="sidebarResetBtn" title="מרכז מפה לכל ישראל">🇮🇱 כל הארץ</button>
-            <button type="button" class="sidebar-quick-btn" id="sidebarLocateBtn" title="התמקד במיקום שלי">📍 המיקום שלי</button>
-          </div>
-
-          <div class="hud-city-box">
-            <div class="hud-city-top">
-              <span class="hud-city-name" id="hudCityName">ירושלים</span>
-              <span class="hud-city-temp" id="hudCityTemp">--°C · טוען תחזית</span>
-            </div>
-            <div class="hud-metrics-grid">
-              <div class="hud-metric-cell">
-                <span class="hud-metric-val" id="hudRadarVal">0 dBZ</span>
-                <span class="hud-metric-lbl">מפת מכ״ם כעת</span>
-              </div>
-              <div class="hud-metric-cell">
-                <span class="hud-metric-val" id="hudMm24Val">0.0 מ״מ</span>
-                <span class="hud-metric-lbl">תחזית 24 ש׳</span>
-              </div>
-              <div class="hud-metric-cell">
-                <span class="hud-metric-val" id="hudProbVal">0%</span>
-                <span class="hud-metric-lbl">שיא הסתברות</span>
-              </div>
-            </div>
-            <div class="hud-verdict">
-              <span id="hudVerdictText">מנתח התאמה בין מפת המכ״ם לתחזית…</span>
-            </div>
-          </div>
-
-          <div class="sidebar-cities-list" id="sidebarCitiesList" aria-label="רשימת ערים ונתוני גשם"></div>
-
-          <button type="button" class="hud-open-stats-btn" id="hudOpenStatsBtn">לניתוח המלא וטבלת כל הערים בישראל ←</button>
+      <aside class="side-floating" aria-label="מקרא עוצמת גשם">
+        <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
+          <span>חלש</span>
+          <div class="legend-bar"></div>
+          <span>חזק</span>
         </div>
       </aside>
 
-      <!-- Unobstructed Map Canvas Stage -->
-      <div class="map-stage">
-        <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
-
-        <aside class="side-floating" aria-label="מקרא עוצמת גשם">
-          <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
-            <span>חלש</span>
-            <div class="legend-bar"></div>
-            <span>חזק</span>
+      <footer class="bottom-dock">
+        <div class="dock-card">
+          <div class="transport-btns">
+            <button type="button" class="btn-circle" id="prevBtn" aria-label="פריים קודם" title="פריים קודם (חץ ימינה)">▶</button>
+            <button type="button" class="btn-circle btn-play" id="playBtn" aria-label="נגן או השהה" title="נגן / השהה (רווח)">⏵</button>
+            <button type="button" class="btn-circle" id="nextBtn" aria-label="פריים הבא" title="פריים הבא (חץ שמאלה)">◀</button>
           </div>
-        </aside>
 
-        <footer class="bottom-dock">
-          <div class="dock-card">
-            <div class="transport-btns">
-              <button type="button" class="btn-circle" id="prevBtn" aria-label="פריים קודם" title="פריים קודם (חץ ימינה)">▶</button>
-              <button type="button" class="btn-circle btn-play" id="playBtn" aria-label="נגן או השהה" title="נגן / השהה (רווח)">⏵</button>
-              <button type="button" class="btn-circle" id="nextBtn" aria-label="פריים הבא" title="פריים הבא (חץ שמאלה)">◀</button>
+          <div class="timeline-box">
+            <input type="range" id="scrubber" class="scrubber-input" min="0" max="0" value="0" aria-label="בורר זמן מכ״ם">
+            <div class="timeline-meta">
+              <span id="rangeLabel">טוען ציר זמן…</span>
+              <span id="frameCounter">0 / 0</span>
             </div>
-
-            <div class="timeline-box">
-              <input type="range" id="scrubber" class="scrubber-input" min="0" max="0" value="0" aria-label="בורר זמן מכ״ם">
-              <div class="timeline-meta">
-                <span id="rangeLabel">טוען ציר זמן…</span>
-                <span id="frameCounter">0 / 0</span>
-              </div>
-            </div>
-
-            <label class="opacity-box" for="opacitySlider">
-              <span>שקיפות</span>
-              <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
-              <span id="opacityValue">85%</span>
-            </label>
           </div>
-        </footer>
-      </div>
+
+          <label class="opacity-box" for="opacitySlider">
+            <span>שקיפות</span>
+            <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
+            <span id="opacityValue">85%</span>
+          </label>
+        </div>
+      </footer>
     </main>
-
-    <!-- Dedicated City Rain Statistics & Forecast vs Map Analysis View -->
-    <section id="viewStats" class="view-panel secondary-panel" aria-label="סטטיסטיקה לגשם לפי ערים בישראל — ניתוח לפי מפות ולפי תחזית">
-      <div class="stats-container">
-        <!-- National KPI Summary Row -->
-        <div class="stats-kpi-grid">
-          <article class="kpi-card">
-            <span class="kpi-label">מוקד הגשם המוביל (מפה + תחזית)</span>
-            <span class="kpi-value" id="kpiTopCity">טוען…</span>
-            <span class="kpi-sub" id="kpiTopCitySub">שקלול מפת מכ״ם ותחזית 24 ש׳</span>
-          </article>
-          <article class="kpi-card">
-            <span class="kpi-label">ממוצע משקעים ארצי צפוי</span>
-            <span class="kpi-value" id="kpiAvgRain">0.0 מ״מ</span>
-            <span class="kpi-sub" id="kpiAvgRainSub">24 שעות קרובות · סה״כ 7 ימים</span>
-          </article>
-          <article class="kpi-card">
-            <span class="kpi-label">ניתוח מפת מכ״ם בזמן אמת</span>
-            <span class="kpi-value" id="kpiRadarActive">0 / 12 ערים</span>
-            <span class="kpi-sub" id="kpiRadarActiveSub">פעילות עננות ומשקעים בפריים הנוכחי</span>
-          </article>
-          <article class="kpi-card">
-            <span class="kpi-label">ייחוס לממוצע נובמבר רב־שנתי (שמ״ט)</span>
-            <span class="kpi-value" id="kpiClimatology">61 מ״מ</span>
-            <span class="kpi-sub" id="kpiClimatologySub">ממוצע חודשי רב־שנתי ב־12 ערי המדגם</span>
-          </article>
-        </div>
-
-        <!-- Region & Analysis Mode Filter Bar -->
-        <div class="stats-toolbar">
-          <div class="filter-group" id="regionFilterGroup" role="group" aria-label="סינון לפי אזור בארץ">
-            <span class="filter-label">אזור:</span>
-            <button type="button" class="filter-btn active" data-region="all">כל הארץ (12)</button>
-            <button type="button" class="filter-btn" data-region="north">צפון והגליל</button>
-            <button type="button" class="filter-btn" data-region="center">מרכז ומישור החוף</button>
-            <button type="button" class="filter-btn" data-region="jerusalem">ירושלים והשפלה</button>
-            <button type="button" class="filter-btn" data-region="south">דרום ונגב</button>
-          </div>
-
-          <div class="filter-group" id="sortModeGroup" role="group" aria-label="שיטת דירוג וניתוח">
-            <span class="filter-label">ניתוח ומיון:</span>
-            <button type="button" class="filter-btn active" data-sort="combined">משולב (מפה + תחזית)</button>
-            <button type="button" class="filter-btn" data-sort="mm24h">תחזית 24 ש׳ (מ״מ)</button>
-            <button type="button" class="filter-btn" data-sort="prob24h">הסתברות גשם (%)</button>
-            <button type="button" class="filter-btn" data-sort="radar">עוצמת מפת מכ״ם</button>
-            <button type="button" class="filter-btn" data-sort="clim">ממוצע רב־שנתי</button>
-          </div>
-        </div>
-
-        <!-- Spotlight Selected City Analysis: 24h Hourly Curve + 7-Day Daily Breakdown -->
-        <div class="spotlight-grid">
-          <article class="stats-card">
-            <div class="stats-card-header">
-              <div>
-                <h2 class="stats-card-title">
-                  <span id="spotCityTitle">ניתוח שעתי (24 שעות): ירושלים</span>
-                  <span id="spotBadge" class="live-badge history">תחזית + מפה</span>
-                </h2>
-                <p class="stats-card-sub" id="spotCitySummary">השוואת מפת המכ״ם החיה לתחזית המשקעים השעתית והסתברות הגשם</p>
-              </div>
-              <button type="button" class="btn-action" id="spotJumpMapBtn">📍 הצג עיר במפה החיה</button>
-            </div>
-
-            <div class="hourly-bars" id="spotHourlyChart" aria-label="גרף תחזית גשם ל־24 השעות הקרובות"></div>
-            <p class="stats-card-sub" id="spotMapVsForecastNote"></p>
-          </article>
-
-          <article class="stats-card">
-            <div class="stats-card-header">
-              <div>
-                <h2 class="stats-card-title" id="spotDailyTitle">תשקיף 7 ימים וסטטיסטיקה: ירושלים</h2>
-                <p class="stats-card-sub" id="spotClimSub">ממוצע נובמבר רב־שנתי: 60 מ״מ · ממוצע שנתי: 535 מ״מ</p>
-              </div>
-            </div>
-            <div class="daily-list" id="spotDailyList"></div>
-          </article>
-        </div>
-
-        <!-- Full Comparative Table of Israeli Cities -->
-        <article class="stats-card">
-          <div class="stats-card-header">
-            <div>
-              <h2 class="stats-card-title">טבלת סטטיסטיקת גשם לפי ערים בישראל — ניתוח מפות מולם תחזית</h2>
-              <p class="stats-card-sub">לחצו על כל עיר בטבלה לעדכון הגרפים למעלה, או על ״הצג במפה״ כדי להתמקד בעיר על גבי מפת המכ״ם החיה</p>
-            </div>
-            <button type="button" class="btn-action" id="refreshForecastBtn">🔄 רענן נתוני תחזית ומפה</button>
-          </div>
-
-          <div class="table-wrap">
-            <table class="cities-stats-table" aria-label="סטטיסטיקת גשם לפי ערים בישראל">
-              <thead>
-                <tr>
-                  <th>עיר ואזור</th>
-                  <th>מזג אוויר כעת</th>
-                  <th>ניתוח מפת מכ״ם (חי)</th>
-                  <th>תחזית 24 שעות (מ״מ)</th>
-                  <th>שיא הסתברות (24 ש׳)</th>
-                  <th>צפי 7 ימים (מ״מ / שעות)</th>
-                  <th>ממוצע נובמבר / שנתי (שמ״ט)</th>
-                  <th>מפה</th>
-                </tr>
-              </thead>
-              <tbody id="citiesStatsTbody"></tbody>
-            </table>
-          </div>
-        </article>
-      </div>
-    </section>
 
     <!-- Secondary / Fallback Panel: IMS Direct Radar + Windy / RainViewer Embed -->
     <section id="viewFallback" class="view-panel secondary-panel" aria-label="מכ״ם השירות המטאורולוגי וגיבוי Windy">
@@ -2395,69 +1432,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
       const CITIES = [
-        { id: "jerusalem", name: "ירושלים", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.7683, lon: 35.2137, labelDir: "right", majorOnLowZoom: true, novAvgMm: 60, annualAvgMm: 535, fallbackTemp: 15.2, fallbackWind: 14, fallbackMm24: 1.4, fallbackProb24: 52, fallbackMm7d: 6.8, fallbackHours7d: 5 },
-        { id: "tel-aviv", name: "תל אביב", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.0853, lon: 34.7818, labelDir: "left", majorOnLowZoom: true, novAvgMm: 72, annualAvgMm: 530, fallbackTemp: 20.4, fallbackWind: 17, fallbackMm24: 2.1, fallbackProb24: 60, fallbackMm7d: 9.4, fallbackHours7d: 6 },
-        { id: "haifa", name: "חיפה", region: "north", regionLabel: "צפון והגליל", lat: 32.7940, lon: 34.9896, labelDir: "left", majorOnLowZoom: true, novAvgMm: 78, annualAvgMm: 540, fallbackTemp: 19.6, fallbackWind: 19, fallbackMm24: 3.6, fallbackProb24: 72, fallbackMm7d: 14.2, fallbackHours7d: 8 },
-        { id: "safed", name: "צפת", region: "north", regionLabel: "צפון והגליל", lat: 32.9646, lon: 35.4960, labelDir: "top", majorOnLowZoom: true, novAvgMm: 92, annualAvgMm: 710, fallbackTemp: 13.8, fallbackWind: 16, fallbackMm24: 4.5, fallbackProb24: 78, fallbackMm7d: 18.5, fallbackHours7d: 10 },
-        { id: "nahariya", name: "נהריה", region: "north", regionLabel: "צפון והגליל", lat: 33.0059, lon: 35.0941, labelDir: "left", majorOnLowZoom: false, novAvgMm: 85, annualAvgMm: 615, fallbackTemp: 19.8, fallbackWind: 21, fallbackMm24: 4.2, fallbackProb24: 76, fallbackMm7d: 16.9, fallbackHours7d: 9 },
-        { id: "tiberias", name: "טבריה", region: "north", regionLabel: "צפון והגליל", lat: 32.7922, lon: 35.5312, labelDir: "right", majorOnLowZoom: true, novAvgMm: 48, annualAvgMm: 420, fallbackTemp: 22.1, fallbackWind: 12, fallbackMm24: 2.4, fallbackProb24: 64, fallbackMm7d: 10.1, fallbackHours7d: 6 },
-        { id: "nazareth", name: "נצרת", region: "north", regionLabel: "צפון והגליל", lat: 32.6996, lon: 35.3035, labelDir: "bottom", majorOnLowZoom: false, novAvgMm: 72, annualAvgMm: 580, fallbackTemp: 17.5, fallbackWind: 15, fallbackMm24: 3.1, fallbackProb24: 68, fallbackMm7d: 12.8, fallbackHours7d: 7 },
-        { id: "netanya", name: "נתניה", region: "center", regionLabel: "מרכז ומישור החוף", lat: 32.3215, lon: 34.8532, labelDir: "left", majorOnLowZoom: false, novAvgMm: 76, annualAvgMm: 550, fallbackTemp: 20.1, fallbackWind: 18, fallbackMm24: 2.6, fallbackProb24: 65, fallbackMm7d: 11.2, fallbackHours7d: 7 },
-        { id: "rehovot", name: "רחובות", region: "jerusalem", regionLabel: "ירושלים והשפלה", lat: 31.8928, lon: 34.8113, labelDir: "bottom", majorOnLowZoom: false, novAvgMm: 66, annualAvgMm: 525, fallbackTemp: 19.9, fallbackWind: 13, fallbackMm24: 1.7, fallbackProb24: 55, fallbackMm7d: 7.9, fallbackHours7d: 5 },
-        { id: "ashdod", name: "אשדוד", region: "center", regionLabel: "מרכז ומישור החוף", lat: 31.8044, lon: 34.6553, labelDir: "left", majorOnLowZoom: false, novAvgMm: 62, annualAvgMm: 480, fallbackTemp: 20.5, fallbackWind: 16, fallbackMm24: 1.5, fallbackProb24: 50, fallbackMm7d: 7.2, fallbackHours7d: 5 },
-        { id: "beer-sheva", name: "באר שבע", region: "south", regionLabel: "דרום ונגב", lat: 31.2518, lon: 34.7913, labelDir: "bottom", majorOnLowZoom: true, novAvgMm: 22, annualAvgMm: 195, fallbackTemp: 19.3, fallbackWind: 14, fallbackMm24: 0.4, fallbackProb24: 28, fallbackMm7d: 2.1, fallbackHours7d: 2 },
-        { id: "eilat", name: "אילת", region: "south", regionLabel: "דרום ונגב", lat: 29.5577, lon: 34.9519, labelDir: "top", majorOnLowZoom: true, novAvgMm: 3, annualAvgMm: 22, fallbackTemp: 25.4, fallbackWind: 18, fallbackMm24: 0.0, fallbackProb24: 8, fallbackMm7d: 0.2, fallbackHours7d: 0 }
+        { name: "ירושלים", lat: 31.7683, lon: 35.2137 },
+        { name: "תל אביב", lat: 32.0853, lon: 34.7818 },
+        { name: "חיפה", lat: 32.7940, lon: 34.9896 },
+        { name: "באר שבע", lat: 31.2518, lon: 34.7913 },
+        { name: "אילת", lat: 29.5577, lon: 34.9519 },
+        { name: "טבריה", lat: 32.7922, lon: 35.5312 },
+        { name: "צפת", lat: 32.9646, lon: 35.4960 },
+        { name: "אשדוד", lat: 31.8044, lon: 34.6553 }
       ];
-
-      // Per-city dynamic state combining Map Radar Analysis + Meteorological Forecast
-      const cityStats = {};
-      CITIES.forEach(function (c, idx) {
-        const defaultHourly = [];
-        for (let h = 0; h < 24; h++) {
-          const wave = Math.max(0, Math.sin(((h + idx) / 24) * Math.PI * 2));
-          defaultHourly.push({
-            hourLabel: String((new Date().getHours() + h) % 24).padStart(2, "0") + ":00",
-            mm: Number((c.fallbackMm24 * wave * 0.18).toFixed(1)),
-            prob: Math.min(100, Math.round(c.fallbackProb24 * (0.4 + 0.6 * wave)))
-          });
-        }
-        const dayNames = ["היום", "מחר", "יום א׳", "יום ב׳", "יום ג׳", "יום ד׳", "יום ה׳"];
-        const defaultDaily = dayNames.map(function (dName, dIdx) {
-          const factor = dIdx === 0 ? 0.35 : dIdx === 1 ? 0.25 : dIdx === 4 ? 0.3 : 0.05;
-          return {
-            dayLabel: dName,
-            mm: Number((c.fallbackMm7d * factor).toFixed(1)),
-            prob: Math.min(95, Math.round(c.fallbackProb24 * (dIdx < 2 ? 1 : dIdx === 4 ? 0.85 : 0.25))),
-            hours: dIdx < 2 ? Math.max(1, Math.round(c.fallbackHours7d * 0.4)) : 0,
-            tempMax: Math.round(c.fallbackTemp + 2 - (dIdx % 2)),
-            tempMin: Math.round(c.fallbackTemp - 5)
-          };
-        });
-        cityStats[c.id] = {
-          city: c,
-          tempC: c.fallbackTemp,
-          windKmh: c.fallbackWind,
-          currentMm: 0,
-          radarDbz: 0,
-          radarMmHr: 0,
-          radarCoveragePct: 0,
-          radarStatusText: "שמיים נקיים במפה",
-          mm24h: c.fallbackMm24,
-          prob24h: c.fallbackProb24,
-          peakHourLabel: "22:00",
-          mm7d: c.fallbackMm7d,
-          rainHours7d: c.fallbackHours7d,
-          hourly24: defaultHourly,
-          daily7: defaultDaily,
-          combinedScore: Number((c.fallbackMm24 * 4 + c.fallbackProb24 * 0.35).toFixed(1)),
-          isLiveForecast: false
-        };
-      });
-
-      let selectedCityId = "jerusalem";
-      let selectedRegionFilter = "all";
-      let selectedSortMode = "combined";
-      let selectedMapLayerMode = "combined";
 
       // DOM elements
       const timestampEl = document.getElementById("timestamp");
@@ -2491,10 +1474,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      // View switcher (Map vs Stats vs Fallback)
+      // View switcher (Map vs Fallback)
       const modeTabs = document.querySelectorAll(".mode-tab");
       const viewMap = document.getElementById("viewMap");
-      const viewStats = document.getElementById("viewStats");
       const viewFallback = document.getElementById("viewFallback");
 
       function switchView(target) {
@@ -2504,7 +1486,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           btn.setAttribute("aria-selected", active ? "true" : "false");
         });
         viewMap.classList.toggle("active", target === "map");
-        if (viewStats) viewStats.classList.toggle("active", target === "stats");
         viewFallback.classList.toggle("active", target === "fallback");
         if (target === "map" && map) {
           setTimeout(function () { map.invalidateSize(); }, 60);
@@ -2531,11 +1512,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       map.createPane("radarPane");
       map.getPane("radarPane").style.zIndex = 450;
 
-      map.createPane("cityBadgePane");
-      map.getPane("cityBadgePane").style.zIndex = 620;
-
       // Dark basemap (Esri World Dark Gray Base + Reference labels) with automatic fallback to OpenStreetMap
-      const ATTR_TEXT = 'רקע: Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · מכ״ם: <a href="https://www.rainviewer.com/">RainViewer</a> | תחזית: Open-Meteo | <a href="https://ims.gov.il/he/RadarSatellite">השמ״ט</a>';
+      const ATTR_TEXT = 'רקע: Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · מכ״ם: <a href="https://www.rainviewer.com/">RainViewer</a> | <a href="https://ims.gov.il/he/RadarSatellite">השמ״ט</a>';
       const darkBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
         maxZoom: 16,
         attribution: ATTR_TEXT
@@ -2560,10 +1538,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       });
 
-      // City chips & interactive Map Badge Markers
+      // City chips & marker highlight
       let activeMarker = null;
-      const cityMapMarkers = {};
-      const cityChipElements = {};
       const pulseIcon = L.divIcon({
         className: "city-pulse-icon",
         iconSize: [14, 14],
@@ -2576,127 +1552,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      function selectCity(cityId, flyOnMap) {
-        const entry = cityStats[cityId];
-        if (!entry) return;
-        selectedCityId = cityId;
-
-        if (cityChipElements[cityId]) {
-          setCityActiveChip(cityChipElements[cityId]);
-        }
-
-        if (flyOnMap) {
-          if (activeMarker) map.removeLayer(activeMarker);
-          activeMarker = L.marker([entry.city.lat, entry.city.lon], { icon: pulseIcon })
-            .addTo(map);
-          map.flyTo([entry.city.lat, entry.city.lon], CITY_ZOOM, { duration: 0.85 });
-        }
-
-        updateMapCityBadges();
-        renderMapHud();
-        renderStatsView();
-      }
-
       CITIES.forEach(function (city) {
         const chip = document.createElement("button");
         chip.type = "button";
-        chip.className = "city-chip" + (city.id === selectedCityId ? " active" : "");
+        chip.className = "city-chip";
         chip.textContent = city.name;
         chip.addEventListener("click", function () {
-          selectCity(city.id, true);
+          switchView("map");
+          setCityActiveChip(chip);
+          if (activeMarker) map.removeLayer(activeMarker);
+          activeMarker = L.marker([city.lat, city.lon], { icon: pulseIcon })
+            .addTo(map)
+            .bindTooltip(city.name, { permanent: true, direction: "top", offset: [0, -8] });
+          map.flyTo([city.lat, city.lon], CITY_ZOOM, { duration: 0.9 });
         });
-        cityChipElements[city.id] = chip;
         citiesBar.appendChild(chip);
-
-        // Create interactive badge marker on the map
-        const badgeIcon = L.divIcon({
-          className: "",
-          html: "",
-          iconSize: [0, 0]
-        });
-        const marker = L.marker([city.lat, city.lon], {
-          icon: badgeIcon,
-          pane: "cityBadgePane"
-        }).addTo(map);
-
-        marker.on("click", function () {
-          selectCity(city.id, true);
-        });
-        cityMapMarkers[city.id] = marker;
       });
-
-      function formatBadgeValue(st) {
-        if (selectedMapLayerMode === "mm24h") {
-          return st.mm24h.toFixed(1) + " מ״מ";
-        }
-        if (selectedMapLayerMode === "prob24h") {
-          return st.prob24h + "%";
-        }
-        if (st.radarDbz >= 15) {
-          return st.radarDbz + " dBZ";
-        }
-        if (st.mm24h >= 0.2) {
-          return st.mm24h.toFixed(1) + " מ״מ";
-        }
-        return st.prob24h + "%";
-      }
-
-      function getBadgeLevelClass(st) {
-        if (st.radarDbz >= 35 || st.mm24h >= 8 || st.prob24h >= 75) return "lvl-heavy";
-        if (st.radarDbz >= 20 || st.mm24h >= 2.5 || st.prob24h >= 50) return "lvl-mod";
-        if (st.radarDbz >= 12 || st.mm24h >= 0.4 || st.prob24h >= 25) return "lvl-rain";
-        return "";
-      }
-
-      function updateMapCityBadges() {
-        const currentZoom = map ? map.getZoom() : DEFAULT_ZOOM;
-        CITIES.forEach(function (city) {
-          const marker = cityMapMarkers[city.id];
-          if (!marker) return;
-          const el = marker.getElement();
-          if (!el) return;
-
-          while (el.firstChild) el.removeChild(el.firstChild);
-
-          if (selectedMapLayerMode === "hidden") {
-            return;
-          }
-
-          const st = cityStats[city.id];
-          const lvl = getBadgeLevelClass(st);
-          const isSelected = city.id === selectedCityId;
-          const isMinorAtZoom = currentZoom < 9 && !city.majorOnLowZoom && !isSelected;
-
-          const wrap = document.createElement("div");
-          wrap.className =
-            "city-map-pin-wrap" +
-            (lvl ? " " + lvl : "") +
-            (isSelected ? " selected" : "") +
-            (isMinorAtZoom ? " minor-label" : "");
-          wrap.title = city.name + " — " + formatBadgeValue(st);
-
-          const dot = document.createElement("div");
-          dot.className = "city-map-pin-dot";
-          wrap.appendChild(dot);
-
-          const label = document.createElement("div");
-          label.className = "city-map-label dir-" + (city.labelDir || "right");
-
-          const nameSpan = document.createElement("span");
-          nameSpan.textContent = city.name;
-
-          const valSpan = document.createElement("span");
-          valSpan.className = "badge-val";
-          valSpan.textContent = formatBadgeValue(st);
-
-          label.appendChild(nameSpan);
-          label.appendChild(valSpan);
-          wrap.appendChild(label);
-          el.appendChild(wrap);
-        });
-      }
-
-      map.on("zoomend", updateMapCityBadges);
 
       const resetChip = citiesBar.querySelector('[data-reset="true"]');
       if (resetChip) {
@@ -2860,137 +1731,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         activeRadarLayer = nextLayer;
 
         updateTimelineUI(safeIndex);
-        sampleRadarFrameForCities(frame);
-      }
-
-      // Offscreen Canvas Map Radar Tile Sampler (Zoom 7 native tiles, CORS-enabled)
-      const tileCanvasCache = {};
-      const RADAR_SAMPLE_ZOOM = 7;
-
-      function latLonToTilePixel(lat, lon, zoom) {
-        const n = Math.pow(2, zoom);
-        const xFloat = ((lon + 180) / 360) * n;
-        const latRad = (lat * Math.PI) / 180;
-        const yFloat = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
-        const tileX = Math.floor(xFloat);
-        const tileY = Math.floor(yFloat);
-        const px = Math.min(255, Math.max(0, Math.floor((xFloat - tileX) * 256)));
-        const py = Math.min(255, Math.max(0, Math.floor((yFloat - tileY) * 256)));
-        return { tileX: tileX, tileY: tileY, px: px, py: py };
-      }
-
-      function rgbaToDbz(r, g, b, a) {
-        if (a < 18) return 0;
-        // Estimate meteorological dBZ from RainViewer color scheme (scheme 2)
-        if (r > 200 && b > 180 && g < 110) return 52; // Magenta/purple extreme
-        if (r > 200 && g < 90) return 44;              // Red heavy rain
-        if (r > 210 && g > 140 && b < 90) return 36;   // Yellow/Orange moderate-heavy
-        if (g > 150 && r < 140) return 27;             // Green moderate rain
-        if (b > 160 || g > 140) return 18;             // Cyan/Blue light rain
-        return 12;                                     // Faint echo
-      }
-
-      function dbzToMmHr(dbz) {
-        if (dbz < 12) return 0;
-        // Marshall-Palmer relation Z = 200 * R^1.6
-        const z = Math.pow(10, dbz / 10);
-        const r = Math.pow(z / 200, 1 / 1.6);
-        return Number(r.toFixed(1));
-      }
-
-      function applySampledRadarToCity(cityId, maxDbz, coveragePct) {
-        const st = cityStats[cityId];
-        if (!st) return;
-        st.radarDbz = maxDbz;
-        st.radarMmHr = dbzToMmHr(maxDbz);
-        st.radarCoveragePct = coveragePct;
-        if (maxDbz >= 40) {
-          st.radarStatusText = "גשם חזק במפה (" + maxDbz + " dBZ)";
-        } else if (maxDbz >= 26) {
-          st.radarStatusText = "גשם בינוני במפה (" + maxDbz + " dBZ)";
-        } else if (maxDbz >= 12) {
-          st.radarStatusText = "עננות / טפטוף במפה (" + maxDbz + " dBZ)";
-        } else {
-          st.radarStatusText = "נקי מענני גשם במפה";
-        }
-        recomputeCombinedScore(st);
-      }
-
-      function recomputeCombinedScore(st) {
-        // Weighted index combining live map radar echo + 24h forecast mm + probability
-        const score = st.radarDbz * 0.85 + st.mm24h * 4.2 + st.prob24h * 0.35 + st.mm7d * 0.4;
-        st.combinedScore = Number(score.toFixed(1));
-      }
-
-      function sampleCityFromCanvas(city, ctx) {
-        const coords = latLonToTilePixel(city.lat, city.lon, RADAR_SAMPLE_ZOOM);
-        const radius = 5; // 11x11 pixel sector (~18km box around city)
-        const x0 = Math.max(0, coords.px - radius);
-        const y0 = Math.max(0, coords.py - radius);
-        const w = Math.min(256 - x0, radius * 2 + 1);
-        const h = Math.min(256 - y0, radius * 2 + 1);
-        try {
-          const imgData = ctx.getImageData(x0, y0, w, h).data;
-          let maxDbz = 0;
-          let activePixels = 0;
-          const totalPixels = w * h;
-          for (let i = 0; i < imgData.length; i += 4) {
-            const dbz = rgbaToDbz(imgData[i], imgData[i + 1], imgData[i + 2], imgData[i + 3]);
-            if (dbz > 0) {
-              activePixels++;
-              if (dbz > maxDbz) maxDbz = dbz;
-            }
-          }
-          const coveragePct = totalPixels > 0 ? Math.round((activePixels / totalPixels) * 100) : 0;
-          applySampledRadarToCity(city.id, maxDbz, coveragePct);
-        } catch (e) {
-          // Canvas tainted or unavailable
-        }
-      }
-
-      function sampleRadarFrameForCities(frame) {
-        if (!frame || !frame.path) return;
-        const groups = {};
-        CITIES.forEach(function (city) {
-          const t = latLonToTilePixel(city.lat, city.lon, RADAR_SAMPLE_ZOOM);
-          const key = frame.path + ":" + t.tileX + ":" + t.tileY;
-          if (!groups[key]) {
-            groups[key] = { tileX: t.tileX, tileY: t.tileY, cities: [] };
-          }
-          groups[key].cities.push(city);
-        });
-
-        Object.keys(groups).forEach(function (key) {
-          const grp = groups[key];
-          if (tileCanvasCache[key]) {
-            grp.cities.forEach(function (c) {
-              sampleCityFromCanvas(c, tileCanvasCache[key]);
-            });
-            updateMapCityBadges();
-            renderMapHud();
-            renderStatsView();
-            return;
-          }
-
-          const tileUrl = radarHost + frame.path + "/256/" + RADAR_SAMPLE_ZOOM + "/" + grp.tileX + "/" + grp.tileY + "/2/1_1.png";
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = function () {
-            const canvas = document.createElement("canvas");
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            ctx.drawImage(img, 0, 0);
-            tileCanvasCache[key] = ctx;
-            grp.cities.forEach(function (c) {
-              sampleCityFromCanvas(c, ctx);
-            });
-            updateMapCityBadges();
-            renderMapHud();
-            renderStatsView();
-          };
-          img.src = tileUrl;
-        });
       }
 
       function stopAnimation() {
@@ -3153,624 +1893,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // =========================================================================
-      // Multi-City Forecast & Statistics Engine (Open-Meteo API + Map Analysis)
-      // =========================================================================
-      const hudCollapseBtn = document.getElementById("hudCollapseBtn");
-      const mapAnalysisHud = document.getElementById("mapAnalysisHud");
-      const mapLayerPills = document.getElementById("mapLayerPills");
-      const hudCityName = document.getElementById("hudCityName");
-      const hudCityTemp = document.getElementById("hudCityTemp");
-      const hudRadarVal = document.getElementById("hudRadarVal");
-      const hudMm24Val = document.getElementById("hudMm24Val");
-      const hudProbVal = document.getElementById("hudProbVal");
-      const hudVerdictText = document.getElementById("hudVerdictText");
-      const hudOpenStatsBtn = document.getElementById("hudOpenStatsBtn");
-      const sidebarCitiesList = document.getElementById("sidebarCitiesList");
-
-      const kpiTopCity = document.getElementById("kpiTopCity");
-      const kpiTopCitySub = document.getElementById("kpiTopCitySub");
-      const kpiAvgRain = document.getElementById("kpiAvgRain");
-      const kpiAvgRainSub = document.getElementById("kpiAvgRainSub");
-      const kpiRadarActive = document.getElementById("kpiRadarActive");
-      const kpiRadarActiveSub = document.getElementById("kpiRadarActiveSub");
-      const kpiClimatology = document.getElementById("kpiClimatology");
-      const kpiClimatologySub = document.getElementById("kpiClimatologySub");
-
-      const regionFilterGroup = document.getElementById("regionFilterGroup");
-      const sortModeGroup = document.getElementById("sortModeGroup");
-      const spotCityTitle = document.getElementById("spotCityTitle");
-      const spotBadge = document.getElementById("spotBadge");
-      const spotCitySummary = document.getElementById("spotCitySummary");
-      const spotJumpMapBtn = document.getElementById("spotJumpMapBtn");
-      const spotHourlyChart = document.getElementById("spotHourlyChart");
-      const spotMapVsForecastNote = document.getElementById("spotMapVsForecastNote");
-      const spotDailyTitle = document.getElementById("spotDailyTitle");
-      const spotClimSub = document.getElementById("spotClimSub");
-      const spotDailyList = document.getElementById("spotDailyList");
-      const citiesStatsTbody = document.getElementById("citiesStatsTbody");
-      const refreshForecastBtn = document.getElementById("refreshForecastBtn");
-
-      const hebrewDayFormatter = new Intl.DateTimeFormat("he-IL", {
-        timeZone: "Asia/Jerusalem",
-        weekday: "short",
-        day: "numeric",
-        month: "numeric"
-      });
-
-      function buildVerdictForCity(st) {
-        if (st.radarDbz >= 25 && st.prob24h >= 40) {
-          return "התאמה גבוהה: ענני גשם פעילים במפת המכ״ם כעת (" + st.radarDbz + " dBZ) לצד תחזית של " + st.mm24h.toFixed(1) + " מ״מ.";
-        }
-        if (st.radarDbz >= 12 && st.mm24h < 0.5) {
-          return "מפת המכ״ם מזהה הד עננות מקומי (" + st.radarDbz + " dBZ) בעוד מודל התחזית צופה משקעים קלים בלבד.";
-        }
-        if (st.radarDbz < 12 && st.mm24h >= 1.5) {
-          return "המפה נקייה כעת מעל " + st.city.name + ", אך לפי התחזית צפויים " + st.mm24h.toFixed(1) + " מ״מ (שיא סביב " + st.peakHourLabel + ").";
-        }
-        if (st.prob24h >= 35) {
-          return "סיכוי של " + st.prob24h + "% לגשם ב־24 השעות הקרובות (שיא סביב " + st.peakHourLabel + ").";
-        }
-        return "מפת המכ״ם והתחזית מראות מזג אוויר יבש ב־24 השעות הקרובות ב" + st.city.name + ".";
-      }
-
-      function renderMapHud() {
-        const st = cityStats[selectedCityId];
-        if (!st || !hudCityName) return;
-        hudCityName.textContent = st.city.name + " · " + st.city.regionLabel;
-        hudCityTemp.textContent = st.tempC.toFixed(1) + "°C | רוח " + Math.round(st.windKmh) + " קמ״ש";
-        hudRadarVal.textContent = st.radarDbz > 0 ? st.radarDbz + " dBZ" : "נקי (0)";
-        hudMm24Val.textContent = st.mm24h.toFixed(1) + " מ״מ";
-        hudProbVal.textContent = st.prob24h + "%";
-        hudVerdictText.textContent = buildVerdictForCity(st);
-
-        if (sidebarCitiesList) {
-          while (sidebarCitiesList.firstChild) sidebarCitiesList.removeChild(sidebarCitiesList.firstChild);
-          CITIES.forEach(function (c) {
-            const cst = cityStats[c.id];
-            const row = document.createElement("button");
-            row.type = "button";
-            row.className = "sidebar-city-row" + (c.id === selectedCityId ? " active" : "");
-
-            const dot = document.createElement("span");
-            const lvl = getBadgeLevelClass(cst);
-            dot.className = "sidebar-city-dot" + (lvl ? " " + lvl : "");
-
-            const nameEl = document.createElement("span");
-            nameEl.className = "sidebar-city-name";
-            nameEl.textContent = c.name;
-
-            const dbzEl = document.createElement("span");
-            dbzEl.className = "sidebar-city-dbz" + (cst.radarDbz >= 12 ? " active-dbz" : "");
-            dbzEl.textContent = cst.radarDbz > 0 ? cst.radarDbz + " dBZ" : "יבש";
-
-            const mmEl = document.createElement("span");
-            mmEl.className = "sidebar-city-mm";
-            mmEl.textContent = cst.mm24h.toFixed(1) + " מ״מ";
-
-            const probEl = document.createElement("span");
-            probEl.className = "sidebar-city-prob";
-            probEl.textContent = cst.prob24h + "%";
-
-            row.appendChild(dot);
-            row.appendChild(nameEl);
-            row.appendChild(dbzEl);
-            row.appendChild(mmEl);
-            row.appendChild(probEl);
-
-            row.addEventListener("click", function () {
-              selectCity(c.id, true);
-            });
-            sidebarCitiesList.appendChild(row);
-          });
-        }
-      }
-
-      function getFilteredAndSortedCities() {
-        const list = CITIES.map(function (c) { return cityStats[c.id]; }).filter(function (st) {
-          if (selectedRegionFilter === "all") return true;
-          return st.city.region === selectedRegionFilter;
-        });
-
-        list.sort(function (a, b) {
-          if (selectedSortMode === "mm24h") return b.mm24h - a.mm24h || b.prob24h - a.prob24h;
-          if (selectedSortMode === "prob24h") return b.prob24h - a.prob24h || b.mm24h - a.mm24h;
-          if (selectedSortMode === "radar") return b.radarDbz - a.radarDbz || b.radarCoveragePct - a.radarCoveragePct;
-          if (selectedSortMode === "clim") return b.city.novAvgMm - a.city.novAvgMm;
-          return b.combinedScore - a.combinedScore;
-        });
-
-        return list;
-      }
-
-      function renderSpotlightCity() {
-        const st = cityStats[selectedCityId];
-        if (!st || !spotHourlyChart || !spotDailyList) return;
-
-        spotCityTitle.textContent = "ניתוח שעתי (24 שעות): " + st.city.name;
-        spotBadge.textContent = st.isLiveForecast ? "תחזית חיה + מפת מכ״ם" : "נתוני תחזית + מפה";
-        spotCitySummary.textContent =
-          "סה״כ צפוי ב־24 שעות: " + st.mm24h.toFixed(1) + " מ״מ · שיא הסתברות: " + st.prob24h + "% (סביב " + st.peakHourLabel + ") · מצב מפה: " + st.radarStatusText;
-        spotMapVsForecastNote.textContent = "ניתוח משולב מפה מול תחזית: " + buildVerdictForCity(st);
-
-        // Render 12 two-hour buckets across 24 hours
-        while (spotHourlyChart.firstChild) spotHourlyChart.removeChild(spotHourlyChart.firstChild);
-        const buckets = [];
-        for (let i = 0; i < 24; i += 2) {
-          const h1 = st.hourly24[i] || { hourLabel: "--:--", mm: 0, prob: 0 };
-          const h2 = st.hourly24[i + 1] || h1;
-          buckets.push({
-            label: h1.hourLabel,
-            mm: Number((h1.mm + h2.mm).toFixed(1)),
-            prob: Math.max(h1.prob, h2.prob)
-          });
-        }
-
-        buckets.forEach(function (b) {
-          const col = document.createElement("div");
-          col.className = "hour-col";
-
-          const valEl = document.createElement("span");
-          valEl.className = "hour-val";
-          valEl.textContent = b.mm > 0 ? b.mm + " מ״מ" : b.prob + "%";
-
-          const wrap = document.createElement("div");
-          wrap.className = "hour-bar-wrap";
-          wrap.title = b.label + " — הסתברות: " + b.prob + "% | גשם: " + b.mm + " מ״מ";
-
-          const fill = document.createElement("div");
-          fill.className = "hour-bar-fill";
-          const pctHeight = Math.max(6, Math.min(100, Math.max(b.prob, Math.round(b.mm * 22))));
-          fill.style.height = pctHeight + "%";
-
-          wrap.appendChild(fill);
-
-          const timeEl = document.createElement("span");
-          timeEl.className = "hour-time";
-          timeEl.textContent = b.label.slice(0, 2);
-
-          col.appendChild(valEl);
-          col.appendChild(wrap);
-          col.appendChild(timeEl);
-          spotHourlyChart.appendChild(col);
-        });
-
-        // Render 7-Day Daily Breakdown
-        spotDailyTitle.textContent = "תשקיף 7 ימים וסטטיסטיקה: " + st.city.name;
-        const shareNov = st.city.novAvgMm > 0 ? Math.round((st.mm7d / st.city.novAvgMm) * 100) : 0;
-        spotClimSub.textContent =
-          "ממוצע נובמבר (שמ״ט): " + st.city.novAvgMm + " מ״מ · ממוצע שנתי: " + st.city.annualAvgMm + " מ״מ · צפי השבוע מהווה ~" + shareNov + "% מממוצע נובמבר";
-
-        while (spotDailyList.firstChild) spotDailyList.removeChild(spotDailyList.firstChild);
-        st.daily7.forEach(function (d) {
-          const row = document.createElement("div");
-          row.className = "daily-row";
-
-          const dayEl = document.createElement("span");
-          dayEl.className = "daily-day";
-          dayEl.textContent = d.dayLabel;
-
-          const probWrap = document.createElement("div");
-          probWrap.className = "daily-prob-wrap";
-
-          const probBar = document.createElement("div");
-          probBar.className = "daily-prob-bar";
-          const probFill = document.createElement("div");
-          probFill.className = "daily-prob-fill";
-          probFill.style.width = Math.max(3, d.prob) + "%";
-          probBar.appendChild(probFill);
-
-          const probTxt = document.createElement("span");
-          probTxt.className = "daily-prob-txt";
-          probTxt.textContent = d.prob + "%";
-
-          probWrap.appendChild(probBar);
-          probWrap.appendChild(probTxt);
-
-          const mmEl = document.createElement("span");
-          mmEl.className = "daily-mm";
-          mmEl.textContent = d.mm.toFixed(1) + " מ״מ";
-
-          const tempEl = document.createElement("span");
-          tempEl.className = "daily-temp";
-          tempEl.textContent = d.tempMin + "°–" + d.tempMax + "°";
-
-          row.appendChild(dayEl);
-          row.appendChild(probWrap);
-          row.appendChild(mmEl);
-          row.appendChild(tempEl);
-          spotDailyList.appendChild(row);
-        });
-      }
-
-      function renderStatsView() {
-        if (!citiesStatsTbody) return;
-
-        // Compute national KPI summaries across all 12 cities
-        const allStats = CITIES.map(function (c) { return cityStats[c.id]; });
-        const sortedByScore = allStats.slice().sort(function (a, b) {
-          return b.combinedScore - a.combinedScore;
-        });
-        const top = sortedByScore[0];
-        if (top && kpiTopCity) {
-          kpiTopCity.textContent = top.city.name + " · " + top.mm24h.toFixed(1) + " מ״מ";
-          kpiTopCitySub.textContent = "הסתברות " + top.prob24h + "% · 7 ימים: " + top.mm7d.toFixed(1) + " מ״מ";
-        }
-
-        const avg24 = allStats.reduce(function (s, x) { return s + x.mm24h; }, 0) / allStats.length;
-        const avg7d = allStats.reduce(function (s, x) { return s + x.mm7d; }, 0) / allStats.length;
-        if (kpiAvgRain) {
-          kpiAvgRain.textContent = avg24.toFixed(1) + " מ״מ (24 ש׳)";
-          kpiAvgRainSub.textContent = "ממוצע 7 ימים ארצי: " + avg7d.toFixed(1) + " מ״מ לעיר";
-        }
-
-        const radarActiveCount = allStats.filter(function (x) { return x.radarDbz >= 12; }).length;
-        const highProbCount = allStats.filter(function (x) { return x.prob24h >= 40; }).length;
-        if (kpiRadarActive) {
-          kpiRadarActive.textContent = radarActiveCount + " במפה · " + highProbCount + " בתחזית";
-          kpiRadarActiveSub.textContent = "ערים עם הד מכ״ם פעיל כעת מול ערים עם סיכוי גשם ≥40%";
-        }
-
-        const avgNovClim = Math.round(allStats.reduce(function (s, x) { return s + x.city.novAvgMm; }, 0) / allStats.length);
-        const pctOfNov = avgNovClim > 0 ? Math.round((avg7d / avgNovClim) * 100) : 0;
-        if (kpiClimatology) {
-          kpiClimatology.textContent = avgNovClim + " מ״מ (נוב׳)";
-          kpiClimatologySub.textContent = "הצפי השבועי מהווה ~" + pctOfNov + "% מממוצע נובמבר הרב־שנתי";
-        }
-
-        renderSpotlightCity();
-
-        // Render comparative table
-        const rows = getFilteredAndSortedCities();
-        const maxMm24 = Math.max(5, Math.max.apply(null, allStats.map(function (x) { return x.mm24h; })));
-        const maxNovClim = Math.max.apply(null, allStats.map(function (x) { return x.city.novAvgMm; }));
-
-        while (citiesStatsTbody.firstChild) citiesStatsTbody.removeChild(citiesStatsTbody.firstChild);
-
-        rows.forEach(function (st) {
-          const tr = document.createElement("tr");
-          if (st.city.id === selectedCityId) {
-            tr.className = "selected-row";
-          }
-          tr.addEventListener("click", function () {
-            selectCity(st.city.id, false);
-          });
-
-          // 1. City & Region
-          const tdCity = document.createElement("td");
-          const cityWrap = document.createElement("div");
-          cityWrap.className = "city-cell-main";
-          const nameTxt = document.createElement("span");
-          nameTxt.textContent = st.city.name;
-          const regTag = document.createElement("span");
-          regTag.className = "region-tag";
-          regTag.textContent = st.city.regionLabel;
-          cityWrap.appendChild(nameTxt);
-          cityWrap.appendChild(regTag);
-          tdCity.appendChild(cityWrap);
-
-          // 2. Current Weather
-          const tdWeather = document.createElement("td");
-          tdWeather.textContent = st.tempC.toFixed(1) + "°C · " + Math.round(st.windKmh) + " קמ״ש";
-
-          // 3. Map Radar Analysis
-          const tdRadar = document.createElement("td");
-          const rPill = document.createElement("span");
-          rPill.className = "radar-pill" + (st.radarDbz >= 12 ? " active-echo" : "");
-          rPill.textContent = st.radarDbz >= 12
-            ? st.radarDbz + " dBZ · " + st.radarMmHr + " מ״מ/ש׳ (כיסוי " + st.radarCoveragePct + "%)"
-            : "0 dBZ · נקי במפה";
-          tdRadar.appendChild(rPill);
-
-          // 4. 24h Forecast mm + visual bar
-          const tdMm24 = document.createElement("td");
-          const mmCell = document.createElement("div");
-          mmCell.className = "bar-inline-cell";
-          const mmTxt = document.createElement("strong");
-          mmTxt.textContent = st.mm24h.toFixed(1) + " מ״מ";
-          const mmTrack = document.createElement("div");
-          mmTrack.className = "bar-track";
-          const mmFill = document.createElement("div");
-          mmFill.className = "bar-fill";
-          mmFill.style.width = Math.min(100, Math.round((st.mm24h / maxMm24) * 100)) + "%";
-          mmTrack.appendChild(mmFill);
-          mmCell.appendChild(mmTxt);
-          mmCell.appendChild(mmTrack);
-          tdMm24.appendChild(mmCell);
-
-          // 5. 24h Max Probability + Peak Hour
-          const tdProb = document.createElement("td");
-          tdProb.textContent = st.prob24h + "% (שיא " + st.peakHourLabel + ")";
-
-          // 6. 7-Day Total mm & Rain Hours
-          const td7d = document.createElement("td");
-          td7d.textContent = st.mm7d.toFixed(1) + " מ״מ · " + st.rainHours7d + " שעות גשם";
-
-          // 7. Multi-year Climatology (IMS November & Annual)
-          const tdClim = document.createElement("td");
-          const climCell = document.createElement("div");
-          climCell.className = "bar-inline-cell";
-          const climTxt = document.createElement("span");
-          climTxt.textContent = st.city.novAvgMm + " מ״מ / " + st.city.annualAvgMm;
-          const climTrack = document.createElement("div");
-          climTrack.className = "bar-track";
-          const climFill = document.createElement("div");
-          climFill.className = "bar-fill clim";
-          climFill.style.width = Math.min(100, Math.round((st.city.novAvgMm / maxNovClim) * 100)) + "%";
-          climTrack.appendChild(climFill);
-          climCell.appendChild(climTxt);
-          climCell.appendChild(climTrack);
-          tdClim.appendChild(climCell);
-
-          // 8. Jump to Map Button
-          const tdAction = document.createElement("td");
-          const mapBtn = document.createElement("button");
-          mapBtn.type = "button";
-          mapBtn.className = "btn-table-map";
-          mapBtn.textContent = "📍 הצג במפה";
-          mapBtn.addEventListener("click", function (ev) {
-            ev.stopPropagation();
-            switchView("map");
-            selectCity(st.city.id, true);
-          });
-          tdAction.appendChild(mapBtn);
-
-          tr.appendChild(tdCity);
-          tr.appendChild(tdWeather);
-          tr.appendChild(tdRadar);
-          tr.appendChild(tdMm24);
-          tr.appendChild(tdProb);
-          tr.appendChild(td7d);
-          tr.appendChild(tdClim);
-          tr.appendChild(tdAction);
-          citiesStatsTbody.appendChild(tr);
-        });
-      }
-
-      async function fetchCitiesForecast() {
-        const lats = CITIES.map(function (c) { return c.lat; }).join(",");
-        const lons = CITIES.map(function (c) { return c.lon; }).join(",");
-        const url =
-          "https://api.open-meteo.com/v1/forecast?latitude=" + lats +
-          "&longitude=" + lons +
-          "&current=precipitation,rain,temperature_2m,wind_speed_10m" +
-          "&hourly=precipitation,precipitation_probability" +
-          "&daily=precipitation_sum,precipitation_hours,precipitation_probability_max,temperature_2m_max,temperature_2m_min" +
-          "&timezone=Asia%2FJerusalem&forecast_days=7";
-
-        try {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
-          const payload = await res.json();
-          const list = Array.isArray(payload) ? payload : [payload];
-
-          const nowSec = Math.floor(Date.now() / 1000);
-          const nowHourIsoPrefix = new Intl.DateTimeFormat("sv-SE", {
-            timeZone: "Asia/Jerusalem",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            hourCycle: "h23"
-          }).format(new Date(nowSec * 1000)).replace(" ", "T");
-
-          list.forEach(function (cityData, idx) {
-            const city = CITIES[idx];
-            if (!city || !cityData) return;
-            const st = cityStats[city.id];
-
-            if (cityData.current) {
-              if (typeof cityData.current.temperature_2m === "number") st.tempC = cityData.current.temperature_2m;
-              if (typeof cityData.current.wind_speed_10m === "number") st.windKmh = cityData.current.wind_speed_10m;
-              if (typeof cityData.current.precipitation === "number") st.currentMm = cityData.current.precipitation;
-            }
-
-            if (cityData.hourly && Array.isArray(cityData.hourly.time)) {
-              const times = cityData.hourly.time;
-              const prec = cityData.hourly.precipitation || [];
-              const probs = cityData.hourly.precipitation_probability || [];
-
-              let startIdx = 0;
-              for (let i = 0; i < times.length; i++) {
-                if (times[i] >= nowHourIsoPrefix) {
-                  startIdx = i;
-                  break;
-                }
-              }
-
-              let sum24 = 0;
-              let maxP24 = 0;
-              let bestHour = "12:00";
-              let bestScore = -1;
-              const next24 = [];
-
-              for (let h = 0; h < 24; h++) {
-                const ti = startIdx + h;
-                if (ti >= times.length) break;
-                const pVal = Number(prec[ti] || 0);
-                const probVal = Number(probs[ti] || 0);
-                const tStr = String(times[ti] || "");
-                const hourPart = tStr.indexOf("T") !== -1 ? tStr.split("T")[1].slice(0, 5) : String(h).padStart(2, "0") + ":00";
-
-                sum24 += pVal;
-                if (probVal > maxP24) maxP24 = probVal;
-                const hScore = pVal * 10 + probVal;
-                if (hScore > bestScore) {
-                  bestScore = hScore;
-                  bestHour = hourPart;
-                }
-                next24.push({
-                  hourLabel: hourPart,
-                  mm: Number(pVal.toFixed(1)),
-                  prob: Math.round(probVal)
-                });
-              }
-
-              st.mm24h = Number(sum24.toFixed(1));
-              st.prob24h = Math.round(maxP24);
-              st.peakHourLabel = bestHour;
-              if (next24.length === 24) {
-                st.hourly24 = next24;
-              }
-            }
-
-            if (cityData.daily && Array.isArray(cityData.daily.time)) {
-              const dTimes = cityData.daily.time;
-              const dSum = cityData.daily.precipitation_sum || [];
-              const dHours = cityData.daily.precipitation_hours || [];
-              const dProb = cityData.daily.precipitation_probability_max || [];
-              const dMaxT = cityData.daily.temperature_2m_max || [];
-              const dMinT = cityData.daily.temperature_2m_min || [];
-
-              let sum7 = 0;
-              let hours7 = 0;
-              const dailyArr = [];
-
-              for (let d = 0; d < Math.min(7, dTimes.length); d++) {
-                const mmVal = Number(dSum[d] || 0);
-                const hrVal = Number(dHours[d] || 0);
-                const prVal = Number(dProb[d] || 0);
-                sum7 += mmVal;
-                hours7 += hrVal;
-
-                let dayLbl = d === 0 ? "היום" : d === 1 ? "מחר" : dTimes[d];
-                if (d >= 2 && dTimes[d]) {
-                  const parsed = new Date(dTimes[d] + "T12:00:00Z");
-                  if (!isNaN(parsed.getTime())) {
-                    dayLbl = hebrewDayFormatter.format(parsed);
-                  }
-                }
-
-                dailyArr.push({
-                  dayLabel: dayLbl,
-                  mm: Number(mmVal.toFixed(1)),
-                  prob: Math.round(prVal),
-                  hours: Math.round(hrVal),
-                  tempMax: Math.round(Number(dMaxT[d] || st.tempC + 2)),
-                  tempMin: Math.round(Number(dMinT[d] || st.tempC - 4))
-                });
-              }
-
-              st.mm7d = Number(sum7.toFixed(1));
-              st.rainHours7d = Math.round(hours7);
-              if (dailyArr.length) {
-                st.daily7 = dailyArr;
-              }
-            }
-
-            st.isLiveForecast = true;
-            recomputeCombinedScore(st);
-          });
-
-          updateMapCityBadges();
-          renderMapHud();
-          renderStatsView();
-        } catch (err) {
-          // Retain pre-populated synoptic/climatological fallback
-          updateMapCityBadges();
-          renderMapHud();
-          renderStatsView();
-        }
-      }
-
-      const sidebarResetBtn = document.getElementById("sidebarResetBtn");
-      const sidebarLocateBtn = document.getElementById("sidebarLocateBtn");
-
-      if (sidebarResetBtn) {
-        sidebarResetBtn.addEventListener("click", function () {
-          switchView("map");
-          if (activeMarker) {
-            map.removeLayer(activeMarker);
-            activeMarker = null;
-          }
-          map.flyTo(ISRAEL_CENTER, DEFAULT_ZOOM, { duration: 0.9 });
-        });
-      }
-
-      if (sidebarLocateBtn) {
-        sidebarLocateBtn.addEventListener("click", function () {
-          locateBtn.click();
-        });
-      }
-
-      // Wire HUD & Statistics interactive controls
-      if (hudCollapseBtn && mapAnalysisHud) {
-        hudCollapseBtn.addEventListener("click", function () {
-          const isCollapsed = mapAnalysisHud.classList.toggle("collapsed");
-          hudCollapseBtn.textContent = isCollapsed ? "הרחב" : "מזער";
-          hudCollapseBtn.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
-        });
-      }
-
-      if (mapLayerPills) {
-        mapLayerPills.querySelectorAll(".hud-pill").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            selectedMapLayerMode = btn.getAttribute("data-layer-mode") || "combined";
-            mapLayerPills.querySelectorAll(".hud-pill").forEach(function (b) {
-              b.classList.toggle("active", b === btn);
-            });
-            updateMapCityBadges();
-          });
-        });
-      }
-
-      if (hudOpenStatsBtn) {
-        hudOpenStatsBtn.addEventListener("click", function () {
-          switchView("stats");
-        });
-      }
-
-      if (spotJumpMapBtn) {
-        spotJumpMapBtn.addEventListener("click", function () {
-          switchView("map");
-          selectCity(selectedCityId, true);
-        });
-      }
-
-      if (regionFilterGroup) {
-        regionFilterGroup.querySelectorAll(".filter-btn").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            selectedRegionFilter = btn.getAttribute("data-region") || "all";
-            regionFilterGroup.querySelectorAll(".filter-btn").forEach(function (b) {
-              b.classList.toggle("active", b === btn);
-            });
-            renderStatsView();
-          });
-        });
-      }
-
-      if (sortModeGroup) {
-        sortModeGroup.querySelectorAll(".filter-btn").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            selectedSortMode = btn.getAttribute("data-sort") || "combined";
-            sortModeGroup.querySelectorAll(".filter-btn").forEach(function (b) {
-              b.classList.toggle("active", b === btn);
-            });
-            renderStatsView();
-          });
-        });
-      }
-
-      if (refreshForecastBtn) {
-        refreshForecastBtn.addEventListener("click", function () {
-          fetchCitiesForecast();
-          if (radarFrames[currentFrameIndex]) {
-            sampleRadarFrameForCities(radarFrames[currentFrameIndex]);
-          }
-        });
-      }
-
-      // Initial render of badges, HUD, and stats table
-      updateMapCityBadges();
-      renderMapHud();
-      renderStatsView();
-
       // Start everything
       fetchRainViewerData();
-      fetchCitiesForecast();
       loadImsImage(10);
       setInterval(fetchRainViewerData, REFRESH_INTERVAL_MS);
-      setInterval(fetchCitiesForecast, REFRESH_INTERVAL_MS);
       setInterval(function () { loadImsImage(10); }, REFRESH_INTERVAL_MS);
     })();
   </script>
