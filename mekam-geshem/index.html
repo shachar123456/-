@@ -1338,6 +1338,127 @@ svg.leaflet-image-layer.leaflet-interactive path {
       display: none !important;
     }
 
+    /* Wind direction compass — floating corner overlay (Open-Meteo) */
+    .wind-compass {
+      position: absolute;
+      left: 12px;
+      bottom: max(78px, calc(64px + env(safe-area-inset-bottom)));
+      z-index: 880;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      min-width: 118px;
+      max-width: 148px;
+      background: rgba(0, 0, 0, 0.82);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 10px 10px 9px;
+      box-shadow: none;
+      border-radius: 0;
+      font-family: var(--font-sans);
+      direction: rtl;
+      unicode-bidi: isolate;
+    }
+
+    .wind-compass[data-state="loading"] .wind-compass-meta,
+    .wind-compass[data-state="error"] .wind-compass-meta {
+      color: var(--text-muted);
+    }
+
+    .wind-compass-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+      text-align: center;
+    }
+
+    .wind-compass-dial {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 8px;
+      border: 1px solid var(--border-bright);
+      background:
+        radial-gradient(circle at center, rgba(245, 245, 240, 0.06) 0 28%, transparent 29%),
+        #000;
+    }
+
+    .wind-compass-cardinal {
+      position: absolute;
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--bg-cream);
+      line-height: 1;
+      z-index: 1;
+    }
+
+    .wind-compass-cardinal.n { top: 4px; left: 50%; transform: translateX(-50%); }
+    .wind-compass-cardinal.e { right: 5px; top: 50%; transform: translateY(-50%); }
+    .wind-compass-cardinal.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+    .wind-compass-cardinal.w { left: 5px; top: 50%; transform: translateY(-50%); }
+
+    .wind-compass-arrow {
+      position: absolute;
+      inset: 10px;
+      display: block;
+      transform-origin: 50% 50%;
+      transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+      z-index: 2;
+    }
+
+    .wind-compass-arrow svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .wind-compass-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: center;
+      min-height: 2.6em;
+    }
+
+    .wind-compass-from {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--bg-cream);
+      line-height: 1.25;
+    }
+
+    .wind-compass-to {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      line-height: 1.25;
+    }
+
+    .wind-compass-speed {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: "IBM Plex Sans", var(--font-sans);
+      color: var(--bg-cream);
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    .wind-compass-hint {
+      margin-top: 4px;
+      font-size: 0.58rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.3;
+    }
+
     .secondary-panel {
       background:
         linear-gradient(115deg, #000 0 70%, #F5F5F0 70.15%),
@@ -1526,6 +1647,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       .side-floating {
         bottom: calc(142px + env(safe-area-inset-bottom));
       }
+      .wind-compass {
+        left: 10px;
+        bottom: max(72px, calc(58px + env(safe-area-inset-bottom)));
+        min-width: 108px;
+        max-width: 128px;
+        padding: 8px 8px 7px;
+      }
+      .wind-compass-dial {
+        width: 72px;
+        height: 72px;
+      }
+      .wind-compass-from {
+        font-size: 0.72rem;
+      }
       .panel-inner {
         grid-template-columns: 1fr;
       }
@@ -1561,6 +1696,37 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <div id="toastBanner" class="toast-banner" role="status" hidden></div>
     </header>
+
+    <!-- Wind direction marker: arrow points where wind blows TO; label says where it comes FROM -->
+    <aside
+      class="wind-compass"
+      id="windCompass"
+      data-state="loading"
+      aria-live="polite"
+      aria-label="כיוון הרוח"
+    >
+      <p class="wind-compass-title">כיוון הרוח</p>
+      <div class="wind-compass-dial" aria-hidden="true">
+        <span class="wind-compass-cardinal n">צ</span>
+        <span class="wind-compass-cardinal e">מז</span>
+        <span class="wind-compass-cardinal s">ד</span>
+        <span class="wind-compass-cardinal w">מע</span>
+        <div class="wind-compass-arrow" id="windArrow">
+          <svg viewBox="0 0 64 64" role="presentation">
+            <!-- Meteorological: arrow tip = direction wind blows TO -->
+            <line x1="32" y1="50" x2="32" y2="16" stroke="#F5F5F0" stroke-width="3.2" stroke-linecap="square" />
+            <polygon points="32,8 24,22 40,22" fill="#F5F5F0" />
+            <rect x="29.2" y="48" width="5.6" height="8" fill="#F5F5F0" />
+          </svg>
+        </div>
+      </div>
+      <div class="wind-compass-meta">
+        <span class="wind-compass-from" id="windFromLabel">טוען רוח…</span>
+        <span class="wind-compass-to" id="windToLabel"></span>
+      </div>
+      <div class="wind-compass-speed" id="windSpeedLabel">— קמ״ש</div>
+      <div class="wind-compass-hint">חץ = לאן הרוח נושבת</div>
+    </aside>
 
     <!-- Primary Interactive Map View -->
     <main id="viewMap" class="view-panel active">
@@ -1624,11 +1790,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       // Embedded bootstrap snapshot so offline / restricted file:// opens still have valid structure
 
       const API_URL = "https://api.rainviewer.com/public/weather-maps.json";
+      const WIND_API_URL = "https://api.open-meteo.com/v1/forecast";
       const ISRAEL_CENTER = [31.5, 34.85];
       const DEFAULT_ZOOM = 7.75;
       const CITY_ZOOM = 12.25;
       const ANIMATION_MS = 550;
       const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+      const WIND_POLL_MS = 3 * 60 * 1000;
 
       const CITIES = [
         { name: "ירושלים", lat: 31.7683, lon: 35.2137 },
@@ -1997,6 +2165,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
               .addTo(map)
               .bindTooltip("המיקום שלי", { permanent: true, direction: "top", offset: [0, -8] });
             map.flyTo(coords, CITY_ZOOM, { duration: 0.9 });
+            scheduleWindRefresh(true);
           },
           function () {
             showToast("לא ניתן לקבל הרשאת מיקום — בחרו עיר מהרשימה למעלה.", 4500);
@@ -2004,6 +2173,142 @@ svg.leaflet-image-layer.leaflet-interactive path {
           { enableHighAccuracy: false, timeout: 8000 }
         );
       });
+
+      // —— Wind direction marker (Open-Meteo, no API key) ——
+      // Convention: API wind_direction_10m = degrees FROM which wind blows.
+      // Compass arrow rotates to point where wind blows TO (= from + 180°).
+      const windCompassEl = document.getElementById("windCompass");
+      const windArrowEl = document.getElementById("windArrow");
+      const windFromLabelEl = document.getElementById("windFromLabel");
+      const windToLabelEl = document.getElementById("windToLabel");
+      const windSpeedLabelEl = document.getElementById("windSpeedLabel");
+
+      const WIND_SECTORS = [
+        { name: "צפון", min: 337.5, max: 360 },
+        { name: "צפון", min: 0, max: 22.5 },
+        { name: "צפון־מזרח", min: 22.5, max: 67.5 },
+        { name: "מזרח", min: 67.5, max: 112.5 },
+        { name: "דרום־מזרח", min: 112.5, max: 157.5 },
+        { name: "דרום", min: 157.5, max: 202.5 },
+        { name: "דרום־מערב", min: 202.5, max: 247.5 },
+        { name: "מערב", min: 247.5, max: 292.5 },
+        { name: "צפון־מערב", min: 292.5, max: 337.5 }
+      ];
+
+      function hebrewWindSector(deg) {
+        const d = ((Number(deg) % 360) + 360) % 360;
+        for (let i = 0; i < WIND_SECTORS.length; i++) {
+          const s = WIND_SECTORS[i];
+          if (d >= s.min && d < s.max) return s.name;
+        }
+        return "צפון";
+      }
+
+      function normalizeDeg(deg) {
+        return ((Number(deg) % 360) + 360) % 360;
+      }
+
+      let windFetchInFlight = false;
+      let windDebounceTimer = null;
+      let lastWindQueryKey = "";
+
+      function setWindLoading() {
+        if (!windCompassEl) return;
+        windCompassEl.setAttribute("data-state", "loading");
+        if (windFromLabelEl) windFromLabelEl.textContent = "טוען רוח…";
+        if (windToLabelEl) windToLabelEl.textContent = "";
+      }
+
+      function setWindError() {
+        if (!windCompassEl) return;
+        windCompassEl.setAttribute("data-state", "error");
+        if (windFromLabelEl) windFromLabelEl.textContent = "רוח לא זמינה";
+        if (windToLabelEl) windToLabelEl.textContent = "ננסה שוב בקרוב";
+      }
+
+      function applyWindReading(fromDeg, speedKmh) {
+        if (!windCompassEl) return;
+        const from = normalizeDeg(fromDeg);
+        const to = normalizeDeg(from + 180);
+        const fromName = hebrewWindSector(from);
+        const toName = hebrewWindSector(to);
+        const speed = Math.round(Number(speedKmh) * 10) / 10;
+
+        windCompassEl.setAttribute("data-state", "ready");
+        if (windArrowEl) {
+          // SVG arrow points "up" (north / 0°) by default → rotate to TO bearing.
+          windArrowEl.style.transform = "rotate(" + to.toFixed(1) + "deg)";
+        }
+        if (windFromLabelEl) windFromLabelEl.textContent = "רוח מ־" + fromName;
+        if (windToLabelEl) windToLabelEl.textContent = "נושבת ל־" + toName;
+        if (windSpeedLabelEl) {
+          windSpeedLabelEl.textContent =
+            (Number.isInteger(speed) ? String(speed) : speed.toFixed(1)) + " קמ״ש";
+        }
+        windCompassEl.setAttribute(
+          "aria-label",
+          "כיוון הרוח: מ־" + fromName + ", נושבת ל־" + toName + ", " + speed + " קמ״ש"
+        );
+      }
+
+      async function fetchWindForMapCenter(force) {
+        if (!map || !windCompassEl) return;
+        if (windFetchInFlight) return;
+        const c = map.getCenter();
+        const lat = Math.round(c.lat * 1000) / 1000;
+        const lon = Math.round(c.lng * 1000) / 1000;
+        const key = lat + "," + lon;
+        if (!force && key === lastWindQueryKey) return;
+
+        windFetchInFlight = true;
+        if (!lastWindQueryKey) setWindLoading();
+        try {
+          const url =
+            WIND_API_URL +
+            "?latitude=" + encodeURIComponent(lat) +
+            "&longitude=" + encodeURIComponent(lon) +
+            "&current=wind_speed_10m,wind_direction_10m" +
+            "&wind_speed_unit=kmh" +
+            "&timezone=Asia%2FJerusalem";
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const cur = data && data.current;
+          if (!cur || typeof cur.wind_direction_10m !== "number") {
+            throw new Error("Missing wind fields");
+          }
+          lastWindQueryKey = key;
+          applyWindReading(cur.wind_direction_10m, cur.wind_speed_10m);
+        } catch (err) {
+          if (!lastWindQueryKey) setWindError();
+        } finally {
+          windFetchInFlight = false;
+        }
+      }
+
+      function scheduleWindRefresh(force) {
+        if (windDebounceTimer) clearTimeout(windDebounceTimer);
+        windDebounceTimer = setTimeout(function () {
+          windDebounceTimer = null;
+          fetchWindForMapCenter(Boolean(force));
+        }, force ? 120 : 450);
+      }
+
+      map.on("moveend", function () {
+        scheduleWindRefresh(false);
+      });
+
+      // City chip / reset already fly the map; also nudge wind refresh after fly starts.
+      citiesBar.addEventListener("click", function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest(".city-chip") : null;
+        if (btn) scheduleWindRefresh(true);
+      });
+
+      fetchWindForMapCenter(true);
+      setInterval(function () {
+        lastWindQueryKey = "";
+        fetchWindForMapCenter(true);
+      }, WIND_POLL_MS);
 
       // Calm live-only radar: show the latest RainViewer scan, poll for a newer one,
       // and swap only when a real new frame arrives. No history loop / playhead / drift.
