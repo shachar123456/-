@@ -1476,7 +1476,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="brand-icon" aria-hidden="true">🌧️</div>
           <div>
             <h1 class="brand-title">מכ״ם גשם ישראל</h1>
-            <p class="brand-sub" id="brandSub">בדיקת נתונים כל 10 שניות · שעון ישראל בזמן אמת</p>
+            <p class="brand-sub" id="brandSub">בדיקת נתונים כל 3 שניות · שעון ישראל בזמן אמת</p>
           </div>
         </div>
 
@@ -1486,7 +1486,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
 
         <div class="status-cluster">
-          <span id="liveBadge" class="live-badge pulsing">חי · בדיקה כל 10 שניות</span>
+          <span id="liveBadge" class="live-badge pulsing">חי · בדיקה כל 3 שניות</span>
           <div class="clock-box">
             <span id="timestamp" class="clock-time">--:--:--</span>
             <span id="relativeTime" class="clock-ago">טוען פריימים…</span>
@@ -2175,7 +2175,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
 
         liveBadgeEl.textContent = isUsingFallbackBootstrap
-          ? "אין חיבור חי · ניסיון כל 10 שניות"
+          ? "אין חיבור חי · ניסיון כל 3 שניות"
           : (isRefreshingCloud ? "מרענן ענן…" : "חי · פייד עדין");
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
@@ -2329,7 +2329,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             updateLiveRadarUI();
           }
           if (!isSilentTick) {
-            showToast("לא ניתן לקבל כרגע סריקה חיה — ננסה שוב אוטומטית בעוד 10 שניות.", 7000);
+            showToast("לא ניתן לקבל כרגע סריקה חיה — ננסה שוב אוטומטית בעוד 3 שניות.", 7000);
           }
         } finally {
           fetchInFlight = false;
@@ -2396,7 +2396,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // Start everything: real-time clock every second, upstream radar check every 10 seconds.
+      // Start everything: real-time clock every second, upstream radar check every 3 seconds.
       // RainViewer publishes a new measured radar frame roughly every 10 minutes; we never
       // relabel an older measurement as "now", and switch immediately when a new frame appears.
       fetchRainViewerData(false);
@@ -2406,7 +2406,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }, 1000);
       setInterval(function () {
         fetchRainViewerData(true);
-      }, 10000);
+      }, 3000);
       setInterval(function () { loadImsImage(10); }, REFRESH_INTERVAL_MS);
     })();
   </script>
