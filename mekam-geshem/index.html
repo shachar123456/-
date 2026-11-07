@@ -767,9 +767,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     /* High-contrast, progressive Hebrew city & town labels on the map */
+    .hebrew-place-marker {
+      width: 1px !important;
+      height: 1px !important;
+      margin: 0 !important;
+      background: transparent !important;
+      border: 0 !important;
+    }
+
     .hebrew-place-label {
       position: absolute;
-      transform: translate(-50%, -50%);
+      left: 0;
+      top: 0;
+      transform: translate(-50%, calc(-100% - 6px));
       white-space: nowrap;
       pointer-events: auto;
       cursor: pointer;
@@ -779,21 +789,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
         0 1px 3px rgba(2, 6, 23, 0.98),
         0 0 6px rgba(2, 6, 23, 0.95),
         0 0 12px rgba(2, 6, 23, 0.85);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      display: block;
       transition: transform 0.15s ease, color 0.15s ease;
       user-select: none;
     }
 
     .hebrew-place-label:hover {
       color: #38bdf8;
-      transform: translate(-50%, -50%) scale(1.1);
+      transform: translate(-50%, calc(-100% - 6px)) scale(1.1);
       z-index: 950 !important;
     }
 
     .hebrew-place-label::before {
       content: "";
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 6px);
+      transform: translate(-50%, -50%);
       border-radius: 50%;
       background: #e2e8f0;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
@@ -1458,7 +1470,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="brand-icon" aria-hidden="true">🌧️</div>
           <div>
             <h1 class="brand-title">מכ״ם גשם ישראל</h1>
-            <p class="brand-sub" id="brandSub">בדיקה חיה · מתעדכן כל שנייה · שעון ישראל</p>
+            <p class="brand-sub" id="brandSub">בדיקת נתונים כל 10 שניות · שעון ישראל בזמן אמת</p>
           </div>
         </div>
 
@@ -1468,7 +1480,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
 
         <div class="status-cluster">
-          <span id="liveBadge" class="live-badge pulsing">בדיקה חיה · כל שנייה</span>
+          <span id="liveBadge" class="live-badge pulsing">חי · בדיקה כל 10 שניות</span>
           <div class="clock-box">
             <span id="timestamp" class="clock-time">--:--:--</span>
             <span id="relativeTime" class="clock-ago">טוען פריימים…</span>
@@ -1864,9 +1876,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         .sort(function (a, b) { return a.tier - b.tier; })
         .map(function (place) {
           const icon = L.divIcon({
-            className: "",
+            className: "hebrew-place-marker",
             html: '<div class="hebrew-place-label tier-' + place.tier + '">' + place.name + "</div>",
-            iconSize: [0, 0]
+            iconSize: [1, 1],
+            iconAnchor: [0.5, 0.5]
           });
           const m = L.marker([place.lat, place.lon], {
             icon: icon,
@@ -1902,13 +1915,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           const pt = map.latLngToContainerPoint([item.place.lat, item.place.lon]);
           const charWidth = t === 1 ? 6.8 : t === 2 ? 6.2 : 5.8;
           const halfW = (item.place.name.length * charWidth + 12) / 2;
-          const halfH = t === 1 ? 8.5 : t === 2 ? 7.5 : 6.8;
+          const labelH = t === 1 ? 17 : t === 2 ? 15 : 13.6;
 
           const box = {
             x1: pt.x - halfW,
-            y1: pt.y - halfH,
+            y1: pt.y - labelH - 10,
             x2: pt.x + halfW,
-            y2: pt.y + halfH
+            y2: pt.y - 3
           };
 
           let collides = false;
@@ -2062,7 +2075,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       function formatRelativeAgo(unixSec) {
         const diffSec = Math.max(0, Math.floor((Date.now() - unixSec * 1000) / 1000));
-        if (diffSec < 60) return "בדיקה חיה · לפני " + diffSec + " שנ׳";
+        if (diffSec < 60) return "מדידת מכ״ם מלפני " + diffSec + " שנ׳ · שעון חי";
         const diffMin = Math.floor(diffSec / 60);
         const remSec = diffSec % 60;
         if (diffMin < 60) {
@@ -2159,10 +2172,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         relativeTimeEl.textContent = formatRelativeAgo(frame.time);
 
         if (isUsingFallbackBootstrap) {
-          liveBadgeEl.textContent = "נתוני גיבוי · בדיקה כל שנייה";
+          liveBadgeEl.textContent = "נתוני גיבוי · בדיקה כל 10 שניות";
           liveBadgeEl.className = "live-badge warn pulsing";
         } else if (isLast && !isPlaying) {
-          liveBadgeEl.textContent = "בדיקה חיה · מתעדכן כל שנייה";
+          liveBadgeEl.textContent = "חי · בדיקה כל 10 שניות";
           liveBadgeEl.className = "live-badge pulsing";
         } else if (isPlaying) {
           liveBadgeEl.textContent = "ניגון חלק (" + formatIsraelTime(frame.time) + ")";
@@ -2494,15 +2507,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // Start everything + 1-second live check loop
+      // Start everything: real-time clock every second, upstream radar check every 10 seconds.
+      // RainViewer publishes a new measured radar frame roughly every 10 minutes; we never
+      // relabel an older measurement as "now", and switch immediately when a new frame appears.
       fetchRainViewerData(false);
       loadImsImage(10);
       setInterval(function () {
         if (radarFrames.length && !isPlaying) {
           updateTimelineUI(currentFrameIndex, 0);
         }
-        fetchRainViewerData(true);
       }, 1000);
+      setInterval(function () {
+        fetchRainViewerData(true);
+      }, 10000);
       setInterval(function () { loadImsImage(10); }, REFRESH_INTERVAL_MS);
     })();
   </script>
