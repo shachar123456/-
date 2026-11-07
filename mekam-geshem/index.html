@@ -1958,17 +1958,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         );
       });
 
-      // One-minute visual loop: six 10-second interpolation steps ending at the latest real scan.
+      // One-minute loop of six real radar scans, advancing every 10 seconds.
       let radarHost = "https://tilecache.rainviewer.com";
-      let previousRadarFrame = null;
+      let loopRadarFrames = [];
       let latestRadarFrame = null;
       let radarOpacity = 0.85;
-      let previousRadarLayer = null;
-      let activeRadarLayer = null;
+      let loopRadarLayers = [];
       let loopRafId = null;
       let loopStartedAt = 0;
       let loopStep = -1;
-      let loopFraction = 0;
       let loopTransition = null;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
@@ -2078,15 +2076,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
         const age = formatRelativeAgo(latestRadarFrame.time);
         timestampEl.textContent = "סריקה " + scanTime + " · חי " + formatLiveClockNow();
         relativeTimeEl.textContent = age;
-        const loopSecond = Math.max(0, loopStep) * 10;
+        const visibleFrame = loopRadarFrames[Math.max(0, loopStep)] || latestRadarFrame;
         liveScanDockEl.textContent =
-          "הדמיית תנועה " +
-          String(loopSecond).padStart(2, "0") +
-          "/60 שנ׳ · הסיום הוא סריקת אמת " +
+          "סריקה " +
+          (Math.max(0, loopStep) + 1) +
+          "/" +
+          Math.max(1, loopRadarFrames.length) +
+          " · " +
+          formatIsraelTime(visibleFrame.time) +
+          " · האחרונה " +
           scanTime;
         liveBadgeEl.textContent = isUsingFallbackBootstrap
           ? "אין חיבור חי · ניסיון כל 10 שניות"
-          : "לולאת דקה · תמונה כל 10 שניות";
+          : "6 סריקות אמת · מעבר כל 10 שניות";
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
           : "live-badge pulsing";
@@ -2098,31 +2100,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      function applyLoopOpacity(fraction) {
-        loopFraction = Math.max(0, Math.min(1, fraction));
-        if (previousRadarLayer) {
-          previousRadarLayer.setOpacity(radarOpacity * (1 - loopFraction));
-        }
-        if (activeRadarLayer) {
-          activeRadarLayer.setOpacity(radarOpacity * loopFraction);
-        }
+      function setLayerOpacities(fromIndex, toIndex, progress) {
+        loopRadarLayers.forEach(function (layer, index) {
+          let opacity = 0;
+          if (index === fromIndex) opacity = radarOpacity * (1 - progress);
+          if (index === toIndex) opacity = Math.max(opacity, radarOpacity * progress);
+          if (fromIndex === toIndex && index === toIndex) opacity = radarOpacity;
+          layer.setOpacity(opacity);
+        });
       }
 
       function startMinuteLoop() {
         if (loopRafId) cancelAnimationFrame(loopRafId);
         loopStartedAt = performance.now();
         loopStep = -1;
-        loopFraction = 0;
         loopTransition = null;
 
         function tick(now) {
           const elapsed = (now - loopStartedAt) % 60000;
-          const nextStep = Math.min(5, Math.floor(elapsed / 10000));
+          const nextStep = Math.min(loopRadarLayers.length - 1, Math.floor(elapsed / 10000));
           if (nextStep !== loopStep) {
+            const fromStep = loopStep < 0 ? nextStep : loopStep;
             loopStep = nextStep;
             loopTransition = {
-              from: loopFraction,
-              to: nextStep / 5,
+              fromIndex: fromStep,
+              toIndex: nextStep,
               startedAt: now
             };
             updateLiveRadarUI();
@@ -2131,9 +2133,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           if (loopTransition) {
             const t = Math.min(1, (now - loopTransition.startedAt) / 650);
             const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
-            applyLoopOpacity(
-              loopTransition.from +
-              (loopTransition.to - loopTransition.from) * eased
+            setLayerOpacities(
+              loopTransition.fromIndex,
+              loopTransition.toIndex,
+              eased
             );
             if (t >= 1) loopTransition = null;
           }
@@ -2142,11 +2145,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
         loopRafId = requestAnimationFrame(tick);
       }
 
-      function mountMinuteLoop(previousFrame, latestFrame, signature) {
-        const nextPreviousLayer = createRadarTileLayer(previousFrame);
-        const nextLatestLayer = createRadarTileLayer(latestFrame);
-        nextPreviousLayer.addTo(map);
-        nextLatestLayer.addTo(map);
+      function mountMinuteLoop(frames, signature) {
+        const nextLayers = frames.map(function (frame) {
+          const layer = createRadarTileLayer(frame);
+          layer.addTo(map);
+          return layer;
+        });
 
         let readyCount = 0;
         let mounted = false;
@@ -2154,32 +2158,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
           if (mounted) return;
           mounted = true;
           if (signature !== lastKnownSignature) {
-            removeRadarLayer(nextPreviousLayer);
-            removeRadarLayer(nextLatestLayer);
+            nextLayers.forEach(removeRadarLayer);
             return;
           }
           if (loopRafId) cancelAnimationFrame(loopRafId);
-          removeRadarLayer(previousRadarLayer);
-          removeRadarLayer(activeRadarLayer);
-          previousRadarLayer = nextPreviousLayer;
-          activeRadarLayer = nextLatestLayer;
-          applyLoopOpacity(0);
+          loopRadarLayers.forEach(removeRadarLayer);
+          loopRadarLayers = nextLayers;
+          setLayerOpacities(0, 0, 1);
           startMinuteLoop();
         }
         function markReady() {
           readyCount++;
-          if (readyCount >= 2) beginLoop();
+          if (readyCount >= nextLayers.length) beginLoop();
         }
-        nextPreviousLayer.once("load", markReady);
-        nextLatestLayer.once("load", markReady);
-        setTimeout(beginLoop, 3000);
+        nextLayers.forEach(function (layer) {
+          layer.once("load", markReady);
+        });
+        setTimeout(beginLoop, 4500);
       }
 
       opacitySlider.addEventListener("input", function () {
         const val = Number(opacitySlider.value);
         radarOpacity = val / 100;
         opacityValue.textContent = val + "%";
-        applyLoopOpacity(loopFraction);
+        if (loopTransition) {
+          const t = Math.min(1, (performance.now() - loopTransition.startedAt) / 650);
+          setLayerOpacities(loopTransition.fromIndex, loopTransition.toIndex, t);
+        } else if (loopStep >= 0) {
+          setLayerOpacities(loopStep, loopStep, 1);
+        }
       });
 
       function applyRadarPayload(data, isFallbackBootstrap) {
@@ -2187,14 +2194,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
           return false;
         }
         const past = data.radar.past;
+        const frames = past.slice(-6).map(function (frame) {
+          return { time: frame.time, path: frame.path };
+        });
         const latest = past[past.length - 1];
-        const previous = past.length > 1 ? past[past.length - 2] : latest;
         const newSig =
           (data.host || "") +
           "|" +
-          previous.time + ":" + previous.path +
-          "|" +
-          latest.time + ":" + latest.path;
+          frames.map(function (frame) {
+            return frame.time + ":" + frame.path;
+          }).join("|");
 
         isUsingFallbackBootstrap = Boolean(isFallbackBootstrap);
 
@@ -2206,10 +2215,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         lastKnownSignature = newSig;
         radarHost = data.host || "https://tilecache.rainviewer.com";
-        previousRadarFrame = { time: previous.time, path: previous.path };
+        loopRadarFrames = frames;
         latestRadarFrame = { time: latest.time, path: latest.path };
         updateLiveRadarUI();
-        mountMinuteLoop(previousRadarFrame, latestRadarFrame, newSig);
+        mountMinuteLoop(loopRadarFrames, newSig);
         return true;
       }
 
