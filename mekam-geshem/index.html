@@ -1626,7 +1626,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const API_URL = "https://api.rainviewer.com/public/weather-maps.json";
       const ISRAEL_CENTER = [31.5, 34.85];
       const DEFAULT_ZOOM = 7.75;
-      const CITY_ZOOM = 10.75;
+      const CITY_ZOOM = 13.5;
       const ANIMATION_MS = 550;
       const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -1874,7 +1874,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             interactive: true
           });
           m.on("click", function () {
-            map.flyTo([place.lat, place.lon], Math.max(map.getZoom(), 11.5), { duration: 0.75 });
+            map.flyTo([place.lat, place.lon], Math.max(map.getZoom(), CITY_ZOOM), { duration: 0.75 });
           });
           return { place: place, marker: m };
         });
