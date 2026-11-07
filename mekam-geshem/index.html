@@ -1535,7 +1535,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     }
   </style>
-  </style>
+
 </head>
 <body>
   <!-- Hidden SVG Filter for High-Resolution Vector-Crisp Cloud Smoothing -->
@@ -1551,9 +1551,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </svg>
 
   <div class="app-shell">
-    <h1 class="visually-hidden">מכ״ם גשם ישראל</h1>
-    <!-- Location chips only — map is full-bleed underneath -->
+    <!-- Top Floating Header + City Chips -->
     <header class="top-overlay">
+      <div class="header-bar">
+        <div class="brand-group">
+          <div class="brand-icon" aria-hidden="true"></div>
+          <div>
+            <h1 class="brand-title">מכ״ם גשם ישראל</h1>
+            <p class="brand-sub" id="brandSub">בדיקת נתונים כל 10 שניות · שעון ישראל בזמן אמת</p>
+          </div>
+        </div>
+
+        <div class="mode-tabs" role="tablist" aria-label="תצוגת מכ״ם">
+          <button type="button" class="mode-tab active" data-view="map" role="tab" aria-selected="true">מפה חיה</button>
+          <button type="button" class="mode-tab" data-view="fallback" role="tab" aria-selected="false">מכ״ם השמ״ט / Windy</button>
+        </div>
+
+        <div class="status-cluster">
+          <span id="liveBadge" class="live-badge pulsing">חי · בדיקה כל 10 שניות</span>
+          <div class="clock-box">
+            <span id="timestamp" class="clock-time">--:--:--</span>
+            <span id="relativeTime" class="clock-ago">טוען פריימים…</span>
+          </div>
+        </div>
+      </div>
+
       <nav class="cities-row" id="citiesBar" aria-label="ערים מהירות בישראל">
         <button type="button" class="city-chip locate-chip" id="locateBtn" title="התמקד במיקום הנוכחי שלי">המיקום שלי</button>
         <button type="button" class="city-chip" data-reset="true" title="תצוגת כל ישראל">כל הארץ</button>
@@ -1565,6 +1587,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Primary Interactive Map View -->
     <main id="viewMap" class="view-panel active">
       <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
+
+      <aside class="side-floating" aria-label="מקרא עוצמת גשם ותצוגת מפה">
+        <button type="button" class="map-style-btn" id="mapStyleBtn" title="החלף סגנון מפה (כהה / רחובות ויישובים מפורטים)">מפה: כהה + כל היישובים</button>
+        <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
+          <span>חלש</span>
+          <div class="legend-bar"></div>
+          <span>חזק</span>
+        </div>
+      </aside>
+
+      <footer class="bottom-dock">
+        <div class="dock-card">
+          <div class="dock-live" aria-live="polite">
+            <div class="dock-kicker">
+              <span class="live-scan-dot" aria-hidden="true"></span>
+              <span>עכשיו · סריקה חיה</span>
+            </div>
+            <div class="dock-title" id="liveScanDock">טוען סריקה חיה…</div>
+            <div class="dock-sub" id="liveScanAge">הענן מתעדכן יחד עם הרענון</div>
+          </div>
+
+          <div class="dock-history">
+            <div class="dock-kicker">היסטוריה · תאריך וזמן</div>
+            <div class="dock-title" id="historyDateTime">—</div>
+            <div class="dock-sub" id="historyMeta">סריקה קודמת כשתגיע</div>
+          </div>
+
+          <label class="opacity-box" for="opacitySlider">
+            <div class="opacity-box-top">
+              <span>שקיפות</span>
+              <span id="opacityValue">85%</span>
+            </div>
+            <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
+          </label>
+        </div>
+      </footer>
     </main>
 
     <!-- Secondary / Fallback Panel: IMS Direct Radar + Windy / RainViewer Embed -->
@@ -1766,14 +1824,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
         { name: "עומר", lat: 31.2672, lon: 34.8492, tier: 4 }
       ];
 
-      // DOM elements (map + location chips UI; optional chrome may be absent)
+      // DOM elements
+      const timestampEl = document.getElementById("timestamp");
+      const relativeTimeEl = document.getElementById("relativeTime");
+      const liveBadgeEl = document.getElementById("liveBadge");
+      const liveScanDockEl = document.getElementById("liveScanDock");
+      const liveScanAgeEl = document.getElementById("liveScanAge");
+      const historyDateTimeEl = document.getElementById("historyDateTime");
+      const historyMetaEl = document.getElementById("historyMeta");
+      const opacitySlider = document.getElementById("opacitySlider");
+      const opacityValue = document.getElementById("opacityValue");
       const citiesBar = document.getElementById("citiesBar");
       const locateBtn = document.getElementById("locateBtn");
       const toastBanner = document.getElementById("toastBanner");
 
       let toastTimer = null;
       function showToast(msg, durationMs) {
-        if (!toastBanner) return;
         if (toastTimer) clearTimeout(toastTimer);
         if (!msg) {
           toastBanner.hidden = true;
@@ -1788,17 +1854,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      // View switcher kept for location handlers; fallback UI is not exposed in the simplified chrome
+      // View switcher (Map vs Fallback)
+      const modeTabs = document.querySelectorAll(".mode-tab");
       const viewMap = document.getElementById("viewMap");
       const viewFallback = document.getElementById("viewFallback");
 
       function switchView(target) {
-        if (viewMap) viewMap.classList.toggle("active", target === "map");
-        if (viewFallback) viewFallback.classList.toggle("active", target === "fallback");
+        modeTabs.forEach(function (btn) {
+          const active = btn.getAttribute("data-view") === target;
+          btn.classList.toggle("active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        viewMap.classList.toggle("active", target === "map");
+        viewFallback.classList.toggle("active", target === "fallback");
         if (target === "map" && map) {
           setTimeout(function () { map.invalidateSize(); }, 60);
         }
       }
+
+      modeTabs.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          switchView(btn.getAttribute("data-view"));
+        });
+      });
 
       // Initialize Leaflet Map centered on Israel (~31.5, 34.85) with smooth inertia & deep zoom
       const map = L.map("map", {
@@ -1847,6 +1925,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
       });
 
       let currentMapStyle = "dark";
+      const mapStyleBtn = document.getElementById("mapStyleBtn");
+      if (mapStyleBtn) {
+        mapStyleBtn.addEventListener("click", function () {
+          if (currentMapStyle === "dark") {
+            currentMapStyle = "dark-osm-full";
+            darkOsmDetailed.setOpacity(1);
+            mapStyleBtn.textContent = "מפה: רחובות ויישובים (כהה מלא)";
+          } else if (currentMapStyle === "dark-osm-full") {
+            currentMapStyle = "light-osm";
+            map.removeLayer(darkBase);
+            map.removeLayer(darkOsmDetailed);
+            lightOsmDetailed.addTo(map);
+            mapStyleBtn.textContent = "מפה: רחובות ויישובים (בהיר)";
+          } else {
+            currentMapStyle = "dark";
+            map.removeLayer(lightOsmDetailed);
+            darkBase.addTo(map);
+            darkOsmDetailed.addTo(map);
+            syncDarkOsmOpacity();
+            mapStyleBtn.textContent = "מפה: כהה + כל היישובים";
+          }
+        });
+      }
 
       function syncDarkOsmOpacity() {
         if (currentMapStyle !== "dark") return;
@@ -2102,7 +2203,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           img.onerror = function (err) {
             radarTileErrors++;
             if (radarTileErrors >= 6 && radarTileLoads === 0) {
-              showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — נסו לרענן או לפתוח שוב מאוחר יותר.", 8000);
+              showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — ניתן לעבור ללשונית ״מכ״ם השמ״ט / Windy״.", 8000);
             }
             done(err, canvas);
           };
@@ -2126,7 +2227,41 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
 
       function updateLiveRadarUI() {
-        // Status chrome removed from the simplified map-only UI; keep hook for clock tick.
+        if (!latestRadarFrame) {
+          timestampEl.textContent = "חי " + formatLiveClockNow();
+          relativeTimeEl.textContent = "ממתין לסריקת מכ״ם עדכנית…";
+          liveScanDockEl.textContent = "טוען סריקה חיה…";
+          liveScanAgeEl.textContent = "הענן מתעדכן יחד עם הרענון";
+          historyDateTimeEl.textContent = "—";
+          historyMetaEl.textContent = "סריקה קודמת כשתגיע";
+          return;
+        }
+
+        const liveStamp = formatIsraelDateTime(latestRadarFrame.time);
+        const liveClock = formatLiveClockNow();
+        const age = formatRelativeAgo(latestRadarFrame.time);
+
+        timestampEl.textContent = formatIsraelTime(latestRadarFrame.time) + " · חי " + liveClock;
+        relativeTimeEl.textContent = age + " · נבדק חי";
+        liveScanDockEl.textContent = liveStamp;
+        liveScanAgeEl.textContent = isRefreshingCloud
+          ? "מרענן ענן ומדידה יחד…"
+          : (age + " · פייד רציף + רענון מסונכרן");
+
+        if (previousRadarFrame && previousRadarFrame.path !== latestRadarFrame.path) {
+          historyDateTimeEl.textContent = formatIsraelDateTime(previousRadarFrame.time);
+          historyMetaEl.textContent = "סריקה קודמת · " + formatRelativeAgo(previousRadarFrame.time);
+        } else {
+          historyDateTimeEl.textContent = liveStamp;
+          historyMetaEl.textContent = "זו הסריקה העדכנית ביותר כרגע";
+        }
+
+        liveBadgeEl.textContent = isUsingFallbackBootstrap
+          ? "אין חיבור חי · ניסיון כל 10 שניות"
+          : (isRefreshingCloud ? "מרענן ענן…" : "חי · פייד עדין");
+        liveBadgeEl.className = isUsingFallbackBootstrap
+          ? "live-badge warn pulsing"
+          : "live-badge pulsing";
       }
 
       function cloudBreathFactor() {
@@ -2225,6 +2360,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         setTimeout(beginSwitch, 2800);
       }
 
+      opacitySlider.addEventListener("input", function () {
+        const val = Number(opacitySlider.value);
+        radarOpacity = val / 100;
+        opacityValue.textContent = val + "%";
+        applyActiveCloudOpacity();
+      });
+
       function applyRadarPayload(data, isFallbackBootstrap) {
         if (!data || !data.radar || !Array.isArray(data.radar.past) || !data.radar.past.length) {
           return false;
@@ -2269,7 +2411,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             updateLiveRadarUI();
           }
           if (!isSilentTick) {
-            showToast("לא ניתן לקבל כרגע סריקה חיה — ננסה שוב אוטומטית בעוד 3 שניות.", 7000);
+            showToast("לא ניתן לקבל כרגע סריקה חיה — ננסה שוב אוטומטית בעוד 10 שניות.", 7000);
           }
         } finally {
           fetchInFlight = false;
@@ -2336,14 +2478,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // Start everything: upstream radar check every 3 seconds.
+      // Start everything: real-time clock every second, upstream radar check every 10 seconds.
       // RainViewer publishes a new measured radar frame roughly every 10 minutes; we never
       // relabel an older measurement as "now", and switch immediately when a new frame appears.
       fetchRainViewerData(false);
       loadImsImage(10);
       setInterval(function () {
+        updateLiveRadarUI();
+      }, 1000);
+      setInterval(function () {
         fetchRainViewerData(true);
-      }, 3000);
+      }, 10000);
       setInterval(function () { loadImsImage(10); }, REFRESH_INTERVAL_MS);
     })();
   </script>
