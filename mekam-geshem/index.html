@@ -1174,33 +1174,51 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .dock-card {
       pointer-events: auto;
-      width: min(620px, 100%);
-      background: var(--bg-glass-strong);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 10px 14px;
-      box-shadow: var(--shadow-lg);
+      width: min(720px, 100%);
+      background:
+        linear-gradient(135deg, rgba(14, 165, 233, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.88));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 18px;
+      padding: 12px 14px;
+      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
       display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 14px;
+      grid-template-columns: 1.4fr 1fr auto;
+      align-items: stretch;
+      gap: 12px;
     }
 
-    .live-scan-box {
-      display: flex;
-      align-items: center;
-      gap: 9px;
+    .dock-live,
+    .dock-history {
       min-width: 0;
-      font-size: 0.8rem;
-      color: var(--text-main);
-      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      padding: 2px 4px;
+    }
+
+    .dock-history {
+      border-right: 1px solid rgba(148, 163, 184, 0.22);
+      padding-right: 12px;
+    }
+
+    .dock-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      text-transform: none;
     }
 
     .live-scan-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       flex: 0 0 auto;
       border-radius: 50%;
       background: var(--emerald);
@@ -1208,22 +1226,47 @@ svg.leaflet-image-layer.leaflet-interactive path {
       animation: livePulseTick 1.5s ease-in-out infinite;
     }
 
+    .dock-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #f8fafc;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.25;
+    }
+
+    .dock-sub {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
     .opacity-box {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.72rem;
       color: var(--text-muted);
       white-space: nowrap;
-      border-right: 1px solid var(--border-subtle);
-      padding-right: 12px;
+      border-right: 1px solid rgba(148, 163, 184, 0.22);
+      padding: 2px 12px 2px 4px;
       /* Low→high left-to-right so the blue slider does not feel inverted in RTL */
       direction: ltr;
       unicode-bidi: isolate;
+      min-width: 132px;
+    }
+
+    .opacity-box-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #e2e8f0;
+      font-weight: 600;
     }
 
     .opacity-input {
-      width: 82px;
+      width: 100%;
       accent-color: var(--accent);
       cursor: pointer;
       direction: ltr;
@@ -1474,15 +1517,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <footer class="bottom-dock">
         <div class="dock-card">
-          <div class="live-scan-box" aria-live="polite">
-            <span class="live-scan-dot" aria-hidden="true"></span>
-            <span id="liveScanDock">טוען את סריקת המכ״ם החיה האחרונה…</span>
+          <div class="dock-live" aria-live="polite">
+            <div class="dock-kicker">
+              <span class="live-scan-dot" aria-hidden="true"></span>
+              <span>עכשיו · סריקה חיה</span>
+            </div>
+            <div class="dock-title" id="liveScanDock">טוען סריקה חיה…</div>
+            <div class="dock-sub" id="liveScanAge">הענן מתעדכן יחד עם הרענון</div>
+          </div>
+
+          <div class="dock-history">
+            <div class="dock-kicker">היסטוריה · תאריך וזמן</div>
+            <div class="dock-title" id="historyDateTime">—</div>
+            <div class="dock-sub" id="historyMeta">סריקה קודמת כשתגיע</div>
           </div>
 
           <label class="opacity-box" for="opacitySlider">
-            <span>שקיפות</span>
+            <div class="opacity-box-top">
+              <span>שקיפות</span>
+              <span id="opacityValue">85%</span>
+            </div>
             <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
-            <span id="opacityValue">85%</span>
           </label>
         </div>
       </footer>
@@ -1692,6 +1747,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const relativeTimeEl = document.getElementById("relativeTime");
       const liveBadgeEl = document.getElementById("liveBadge");
       const liveScanDockEl = document.getElementById("liveScanDock");
+      const liveScanAgeEl = document.getElementById("liveScanAge");
+      const historyDateTimeEl = document.getElementById("historyDateTime");
+      const historyMetaEl = document.getElementById("historyMeta");
       const opacitySlider = document.getElementById("opacitySlider");
       const opacityValue = document.getElementById("opacityValue");
       const citiesBar = document.getElementById("citiesBar");
@@ -1966,30 +2024,34 @@ svg.leaflet-image-layer.leaflet-interactive path {
         );
       });
 
-      // 6 states over the last ~12 minutes (2 minutes apart), looped every 0.5s.
-      // RainViewer publishes real scans ~every 10 minutes, so intermediate states
-      // are smooth blends between the previous and latest measured scans.
+      // Single live radar image: cloud and refresh move together when a new scan arrives.
       let radarHost = "https://tilecache.rainviewer.com";
       let previousRadarFrame = null;
       let latestRadarFrame = null;
-      let loopRadarFrames = [];
       let radarOpacity = 0.85;
-      let previousRadarLayer = null;
-      let latestRadarLayer = null;
-      let loopRafId = null;
-      let loopStartedAt = 0;
-      let loopStep = -1;
+      let activeRadarLayer = null;
+      let outgoingRadarLayer = null;
+      let fadeRafId = null;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
       let lastKnownSignature = "";
       let fetchInFlight = false;
       let isUsingFallbackBootstrap = false;
-      const LOOP_STEPS = 6;
-      const STEP_MINUTES = 2;
-      const WINDOW_MINUTES = (LOOP_STEPS - 1) * STEP_MINUTES; // 10 minutes of stepped history ending at latest
+      let isRefreshingCloud = false;
 
       const timeFormatter = new Intl.DateTimeFormat("he-IL", {
         timeZone: "Asia/Jerusalem",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      });
+
+      const dateTimeFormatter = new Intl.DateTimeFormat("he-IL", {
+        timeZone: "Asia/Jerusalem",
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         hourCycle: "h23"
@@ -2007,43 +2069,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return timeFormatter.format(new Date(unixSec * 1000));
       }
 
+      function formatIsraelDateTime(unixSec) {
+        return dateTimeFormatter.format(new Date(unixSec * 1000));
+      }
+
       function formatLiveClockNow() {
         return liveClockFormatter.format(new Date());
       }
 
       function formatRelativeAgo(unixSec) {
         const diffSec = Math.max(0, Math.floor((Date.now() - unixSec * 1000) / 1000));
-        if (diffSec < 60) return "מדידת מכ״ם מלפני " + diffSec + " שנ׳ · שעון חי";
+        if (diffSec < 60) return "מלפני " + diffSec + " שנ׳";
         const diffMin = Math.floor(diffSec / 60);
         const remSec = diffSec % 60;
         if (diffMin < 60) {
-          return "סריקה מלפני " + diffMin + ":" + String(remSec).padStart(2, "0") + " דק׳ · נבדק חי";
+          return "מלפני " + diffMin + ":" + String(remSec).padStart(2, "0") + " דק׳";
         }
         const h = Math.floor(diffMin / 60);
         const m = diffMin % 60;
         const hLabel = h === 1 ? "שעה" : h === 2 ? "שעתיים" : h + " שעות";
-        return "לפני " + hLabel + (m > 0 ? " ו־" + m + " דק׳" : "") + " · נבדק חי";
+        return "לפני " + hLabel + (m > 0 ? " ו־" + m + " דק׳" : "");
       }
 
-      function buildTwelveMinuteSteps(previousFrame, latestFrame) {
-        const steps = [];
-        for (let i = 0; i < LOOP_STEPS; i++) {
-          const minutesBack = (LOOP_STEPS - 1 - i) * STEP_MINUTES;
-          const blend = i / (LOOP_STEPS - 1);
-          steps.push({
-            time: latestFrame.time - minutesBack * 60,
-            blend: blend,
-            minutesBack: minutesBack,
-            isLatest: i === LOOP_STEPS - 1
-          });
-        }
-        // Keep references used by tile layers.
-        steps.previousFrame = previousFrame;
-        steps.latestFrame = latestFrame;
-        return steps;
-      }
-
-      // Custom High-Resolution Smooth Canvas Radar Layer (512px HD tiles + Bicubic/Gaussian Edge Anti-Aliasing)
       const SmoothRadarGridLayer = L.GridLayer.extend({
         createTile: function (coords, done) {
           const canvas = document.createElement("canvas");
@@ -2099,31 +2146,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
         if (!latestRadarFrame) {
           timestampEl.textContent = "חי " + formatLiveClockNow();
           relativeTimeEl.textContent = "ממתין לסריקת מכ״ם עדכנית…";
-          liveScanDockEl.textContent = "ממתין לסריקת המכ״ם החיה האחרונה…";
+          liveScanDockEl.textContent = "טוען סריקה חיה…";
+          liveScanAgeEl.textContent = "הענן מתעדכן יחד עם הרענון";
+          historyDateTimeEl.textContent = "—";
+          historyMetaEl.textContent = "סריקה קודמת כשתגיע";
           return;
         }
 
-        const scanTime = formatIsraelTime(latestRadarFrame.time);
+        const liveStamp = formatIsraelDateTime(latestRadarFrame.time);
+        const liveClock = formatLiveClockNow();
         const age = formatRelativeAgo(latestRadarFrame.time);
-        timestampEl.textContent = "סריקה " + scanTime + " · חי " + formatLiveClockNow();
-        relativeTimeEl.textContent = age;
-        const step = loopRadarFrames[Math.max(0, loopStep)] || loopRadarFrames[loopRadarFrames.length - 1];
-        const stepLabel = step
-          ? (step.minutesBack === 0
-              ? "עכשיו (" + formatIsraelTime(step.time) + ")"
-              : "לפני " + step.minutesBack + " דק׳ (" + formatIsraelTime(step.time) + ")")
-          : formatIsraelTime(latestRadarFrame.time);
-        liveScanDockEl.textContent =
-          "מצב " +
-          (Math.max(0, loopStep) + 1) +
-          "/" +
-          LOOP_STEPS +
-          " · " +
-          stepLabel +
-          " · חלון 12 דק׳ / כל 2 דק׳";
+
+        timestampEl.textContent = formatIsraelTime(latestRadarFrame.time) + " · חי " + liveClock;
+        relativeTimeEl.textContent = age + " · נבדק חי";
+        liveScanDockEl.textContent = liveStamp;
+        liveScanAgeEl.textContent = isRefreshingCloud
+          ? "מרענן ענן ומדידה יחד…"
+          : (age + " · הענן והרענון מסונכרנים");
+
+        if (previousRadarFrame && previousRadarFrame.path !== latestRadarFrame.path) {
+          historyDateTimeEl.textContent = formatIsraelDateTime(previousRadarFrame.time);
+          historyMetaEl.textContent = "סריקה קודמת · " + formatRelativeAgo(previousRadarFrame.time);
+        } else {
+          historyDateTimeEl.textContent = liveStamp;
+          historyMetaEl.textContent = "זו הסריקה העדכנית ביותר כרגע";
+        }
+
         liveBadgeEl.textContent = isUsingFallbackBootstrap
           ? "אין חיבור חי · ניסיון כל 10 שניות"
-          : "12 דק׳ אחורה · כל 2 דק׳";
+          : (isRefreshingCloud ? "מרענן ענן…" : "תמונה חיה אחת");
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
           : "live-badge pulsing";
@@ -2135,86 +2186,75 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      function applyBlend(blend) {
-        const t = Math.max(0, Math.min(1, blend));
-        if (previousRadarLayer) previousRadarLayer.setOpacity(radarOpacity * (1 - t));
-        if (latestRadarLayer) latestRadarLayer.setOpacity(radarOpacity * t);
-      }
+      function crossfadeToLatest(frame) {
+        const nextLayer = createRadarTileLayer(frame);
+        nextLayer.addTo(map);
+        isRefreshingCloud = true;
+        updateLiveRadarUI();
 
-      function startMinuteLoop() {
-        if (loopRafId) cancelAnimationFrame(loopRafId);
-        if (!previousRadarLayer || !latestRadarLayer || !loopRadarFrames.length) return;
-        loopStartedAt = performance.now();
-        loopStep = -1;
+        let switched = false;
+        function beginSwitch() {
+          if (switched) return;
+          switched = true;
 
-        const FRAME_MS = 500;
-        const FADE_MS = 160;
-        const cycleMs = LOOP_STEPS * FRAME_MS;
-
-        function tick(now) {
-          const elapsed = (now - loopStartedAt) % cycleMs;
-          const exact = elapsed / FRAME_MS;
-          const fromIndex = Math.floor(exact) % LOOP_STEPS;
-          const toIndex = (fromIndex + 1) % LOOP_STEPS;
-          const within = exact - Math.floor(exact);
-          const fade = Math.min(1, within * (FRAME_MS / FADE_MS));
-          const fromBlend = loopRadarFrames[fromIndex].blend;
-          const toBlend = loopRadarFrames[toIndex].blend;
-
-          if (fromIndex === LOOP_STEPS - 1) {
-            applyBlend(fromBlend);
-          } else {
-            applyBlend(fromBlend + (toBlend - fromBlend) * fade);
-          }
-
-          if (fromIndex !== loopStep) {
-            loopStep = fromIndex;
+          if (!latestRadarFrame || latestRadarFrame.path !== frame.path) {
+            removeRadarLayer(nextLayer);
+            isRefreshingCloud = false;
             updateLiveRadarUI();
-          }
-          loopRafId = requestAnimationFrame(tick);
-        }
-        loopRafId = requestAnimationFrame(tick);
-      }
-
-      function mountMinuteLoop(previousFrame, latestFrame, signature) {
-        const nextPrevious = createRadarTileLayer(previousFrame);
-        const nextLatest = createRadarTileLayer(latestFrame);
-        nextPrevious.addTo(map);
-        nextLatest.addTo(map);
-
-        let readyCount = 0;
-        let mounted = false;
-        function beginLoop() {
-          if (mounted) return;
-          mounted = true;
-          if (signature !== lastKnownSignature) {
-            removeRadarLayer(nextPrevious);
-            removeRadarLayer(nextLatest);
             return;
           }
-          if (loopRafId) cancelAnimationFrame(loopRafId);
-          removeRadarLayer(previousRadarLayer);
-          removeRadarLayer(latestRadarLayer);
-          previousRadarLayer = nextPrevious;
-          latestRadarLayer = nextLatest;
-          applyBlend(0);
-          startMinuteLoop();
+
+          if (fadeRafId) {
+            cancelAnimationFrame(fadeRafId);
+            fadeRafId = null;
+          }
+          if (outgoingRadarLayer) {
+            removeRadarLayer(outgoingRadarLayer);
+            outgoingRadarLayer = null;
+          }
+
+          if (!activeRadarLayer) {
+            nextLayer.setOpacity(radarOpacity);
+            activeRadarLayer = nextLayer;
+            isRefreshingCloud = false;
+            updateLiveRadarUI();
+            return;
+          }
+
+          const previousLayer = activeRadarLayer;
+          outgoingRadarLayer = previousLayer;
+          activeRadarLayer = nextLayer;
+          const startTs = performance.now();
+          const duration = 520;
+
+          function stepFade(now) {
+            const t = Math.min(1, (now - startTs) / duration);
+            const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
+            nextLayer.setOpacity(radarOpacity * eased);
+            previousLayer.setOpacity(radarOpacity * (1 - eased));
+            if (t < 1) {
+              fadeRafId = requestAnimationFrame(stepFade);
+            } else {
+              removeRadarLayer(previousLayer);
+              outgoingRadarLayer = null;
+              fadeRafId = null;
+              isRefreshingCloud = false;
+              updateLiveRadarUI();
+            }
+          }
+          fadeRafId = requestAnimationFrame(stepFade);
         }
-        function markReady() {
-          readyCount++;
-          if (readyCount >= 2) beginLoop();
-        }
-        nextPrevious.once("load", markReady);
-        nextLatest.once("load", markReady);
-        setTimeout(beginLoop, 3500);
+
+        nextLayer.once("load", beginSwitch);
+        setTimeout(beginSwitch, 2800);
       }
 
       opacitySlider.addEventListener("input", function () {
         const val = Number(opacitySlider.value);
         radarOpacity = val / 100;
         opacityValue.textContent = val + "%";
-        if (loopStep >= 0 && loopRadarFrames[loopStep]) {
-          applyBlend(loopRadarFrames[loopStep].blend);
+        if (activeRadarLayer) {
+          activeRadarLayer.setOpacity(radarOpacity);
         }
       });
 
@@ -2224,13 +2264,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
         const past = data.radar.past;
         const latest = past[past.length - 1];
-        const previous = past.length > 1 ? past[past.length - 2] : latest;
-        const newSig =
-          (data.host || "") +
-          "|" +
-          previous.time + ":" + previous.path +
-          "|" +
-          latest.time + ":" + latest.path;
+        const previous = past.length > 1 ? past[past.length - 2] : null;
+        const newSig = (data.host || "") + "|" + latest.time + ":" + latest.path;
 
         isUsingFallbackBootstrap = Boolean(isFallbackBootstrap);
 
@@ -2241,11 +2276,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         lastKnownSignature = newSig;
         radarHost = data.host || "https://tilecache.rainviewer.com";
-        previousRadarFrame = { time: previous.time, path: previous.path };
+        previousRadarFrame = previous
+          ? { time: previous.time, path: previous.path }
+          : null;
         latestRadarFrame = { time: latest.time, path: latest.path };
-        loopRadarFrames = buildTwelveMinuteSteps(previousRadarFrame, latestRadarFrame);
         updateLiveRadarUI();
-        mountMinuteLoop(previousRadarFrame, latestRadarFrame, newSig);
+        crossfadeToLatest(latestRadarFrame);
         return true;
       }
 
