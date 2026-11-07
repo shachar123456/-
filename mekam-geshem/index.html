@@ -749,8 +749,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     .leaflet-radarPane-pane {
-      filter: url(#radarSmoothFilter) drop-shadow(0 0 6px rgba(56, 189, 248, 0.28)) saturate(1.22);
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.32)) saturate(1.25);
       will-change: opacity, transform;
+    }
+
+    .leaflet-radarPane-pane canvas.leaflet-tile {
+      image-rendering: auto;
+    }
+
+    /* Dark-mode filter for detailed Hebrew OpenStreetMap tiles (when enabled) */
+    .osm-dark-hebrew-tiles .leaflet-tile {
+      filter: invert(92%) hue-rotate(185deg) brightness(92%) contrast(92%) saturate(75%);
     }
 
     .leaflet-radarPane-pane .leaflet-layer {
@@ -1794,15 +1803,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
       map.createPane("hebrewLabelsPane");
       map.getPane("hebrewLabelsPane").style.zIndex = 610;
 
-      // High-resolution Dark Basemap + Detailed OSM Hebrew Switcher
-      const ATTR_TEXT = 'רקע: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &amp; CARTO · מכ״ם: <a href="https://www.rainviewer.com/">RainViewer HD</a> | <a href="https://ims.gov.il/he/RadarSatellite">השמ״ט</a>';
-      const darkBase = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
-        subdomains: "abcd",
-        maxZoom: 19,
+      // High-resolution Dark Basemap (Esri World Dark Gray + Dark-Mode Detailed Hebrew OSM + Built-in Hebrew Gazetteer)
+      const ATTR_TEXT = 'רקע: Esri, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · מכ״ם: <a href="https://www.rainviewer.com/">RainViewer HD</a> | <a href="https://ims.gov.il/he/RadarSatellite">השמ״ט</a>';
+      const darkBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+        maxNativeZoom: 16,
+        maxZoom: 18,
         attribution: ATTR_TEXT
       }).addTo(map);
 
-      const detailedOsmBase = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      // Detailed OpenStreetMap layer styled in dark mode (shows every street, neighborhood, kibbutz & moshav in Hebrew)
+      const darkOsmDetailed = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        className: "osm-dark-hebrew-tiles",
+        attribution: ATTR_TEXT
+      });
+
+      const lightOsmDetailed = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: ATTR_TEXT
       });
@@ -1812,18 +1828,39 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (mapStyleBtn) {
         mapStyleBtn.addEventListener("click", function () {
           if (currentMapStyle === "dark") {
-            currentMapStyle = "detailed";
+            currentMapStyle = "dark-osm";
             map.removeLayer(darkBase);
-            detailedOsmBase.addTo(map);
-            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים מפורטים";
+            darkOsmDetailed.addTo(map);
+            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (כהה)";
+          } else if (currentMapStyle === "dark-osm") {
+            currentMapStyle = "light-osm";
+            map.removeLayer(darkOsmDetailed);
+            lightOsmDetailed.addTo(map);
+            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (בהיר)";
           } else {
             currentMapStyle = "dark";
-            map.removeLayer(detailedOsmBase);
+            map.removeLayer(lightOsmDetailed);
             darkBase.addTo(map);
             mapStyleBtn.textContent = "🗺️ מפה: כהה + כל היישובים";
           }
         });
       }
+
+      // Automatically switch to detailed dark OSM when zooming in past z >= 11 so every neighborhood & small settlement is visible
+      map.on("zoomend", function () {
+        if (currentMapStyle === "dark") {
+          if (map.getZoom() >= 11) {
+            if (!map.hasLayer(darkOsmDetailed)) {
+              darkOsmDetailed.addTo(map);
+              darkOsmDetailed.setOpacity(0.55);
+            }
+          } else {
+            if (map.hasLayer(darkOsmDetailed)) {
+              map.removeLayer(darkOsmDetailed);
+            }
+          }
+        }
+      });
 
       // Progressive Hebrew City & Town Labels Layer (Reveals More Cities as You Zoom In)
       const placeMarkers = ISRAEL_PLACES.map(function (place) {
@@ -1849,9 +1886,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           const t = item.place.tier;
           const shouldShow =
             t === 1 ||
-            (t === 2 && z >= 7.75) ||
-            (t === 3 && z >= 9.25) ||
-            (t === 4 && z >= 10.5);
+            (t === 2 && z >= 7) ||
+            (t === 3 && z >= 8.5) ||
+            (t === 4 && z >= 9.75);
 
           if (shouldShow) {
             if (!map.hasLayer(item.marker)) {
@@ -2006,13 +2043,50 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return "לפני " + hLabel + (m > 0 ? " ו־" + m + " דק׳" : "") + " · נבדק חי";
       }
 
-      function buildRadarTileUrl(frame) {
-        // High-DPI 512px RainViewer v2 radar tiles with smooth snow/cloud rendering (1_1)
-        return radarHost + frame.path + "/512/{z}/{x}/{y}/2/1_1.png";
-      }
+      // Custom High-Resolution Smooth Canvas Radar Layer (512px HD tiles + Bicubic/Gaussian Edge Anti-Aliasing)
+      const SmoothRadarGridLayer = L.GridLayer.extend({
+        createTile: function (coords, done) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 512;
+          canvas.height = 512;
+          canvas.className = "leaflet-tile";
+
+          const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+
+          const frame = this.options.radarFrame;
+          const url = radarHost + frame.path + "/512/" + coords.z + "/" + coords.x + "/" + coords.y + "/2/1_1.png";
+
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = function () {
+            radarTileLoads++;
+            // Multi-pass soft organic cloud rendering so radar cells have zero pixelation
+            ctx.save();
+            ctx.filter = "blur(6px) saturate(1.25)";
+            ctx.globalAlpha = 0.65;
+            ctx.drawImage(img, 0, 0, 512, 512);
+            ctx.filter = "blur(2.2px) saturate(1.15)";
+            ctx.globalAlpha = 0.85;
+            ctx.drawImage(img, 0, 0, 512, 512);
+            ctx.restore();
+            done(null, canvas);
+          };
+          img.onerror = function (err) {
+            radarTileErrors++;
+            if (radarTileErrors >= 6 && radarTileLoads === 0) {
+              showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — ניתן לעבור ללשונית ״מכ״ם השמ״ט / Windy״.", 8000);
+            }
+            done(err, canvas);
+          };
+          img.src = url;
+          return canvas;
+        }
+      });
 
       function createRadarTileLayer(frame) {
-        const layer = L.tileLayer(buildRadarTileUrl(frame), {
+        return new SmoothRadarGridLayer({
           pane: "radarPane",
           tileSize: 256,
           opacity: 0,
@@ -2020,21 +2094,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           maxZoom: 15,
           updateWhenIdle: false,
           updateWhenZooming: true,
-          keepBuffer: 6
+          keepBuffer: 6,
+          radarFrame: frame
         });
-
-        layer.on("tileload", function () {
-          radarTileLoads++;
-        });
-
-        layer.on("tileerror", function () {
-          radarTileErrors++;
-          if (radarTileErrors >= 6 && radarTileLoads === 0) {
-            showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — ניתן לעבור ללשונית ״מכ״ם השמ״ט / Windy״.", 8000);
-          }
-        });
-
-        return layer;
       }
 
       function ensureAllFramesMounted() {
