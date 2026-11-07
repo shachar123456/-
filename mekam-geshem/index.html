@@ -749,7 +749,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     .leaflet-radarPane-pane {
-      filter: blur(5.5px) contrast(1.14) saturate(1.28) drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
+      filter: url(#radarSmoothFilter) saturate(1.25) contrast(1.06) drop-shadow(0 0 6px rgba(56, 189, 248, 0.28));
       will-change: opacity, transform;
     }
 
@@ -1438,13 +1438,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </style>
 </head>
 <body>
-  <!-- Hidden SVG Filter for High-Resolution Organic Cloud Smoothing -->
+  <!-- Hidden SVG Filter for High-Resolution Vector-Crisp Cloud Smoothing -->
   <svg width="0" height="0" style="position:absolute;width:0;height:0;pointer-events:none;" aria-hidden="true">
     <defs>
-      <filter id="radarSmoothFilter" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="1.35" result="smoothed" />
-        <feComponentTransfer in="smoothed">
-          <feFuncA type="linear" slope="1.18" intercept="-0.02" />
+      <filter id="radarSmoothFilter" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blurred" />
+        <feComponentTransfer in="blurred" result="crispCloud">
+          <feFuncA type="linear" slope="1.55" intercept="-0.08" />
         </feComponentTransfer>
       </filter>
     </defs>
@@ -1581,8 +1581,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       const API_URL = "https://api.rainviewer.com/public/weather-maps.json";
       const ISRAEL_CENTER = [31.5, 34.85];
-      const DEFAULT_ZOOM = 7;
-      const CITY_ZOOM = 10;
+      const DEFAULT_ZOOM = 7.75;
+      const CITY_ZOOM = 10.75;
       const ANIMATION_MS = 550;
       const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -1890,9 +1890,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           const t = item.place.tier;
           const eligibleByZoom =
             t === 1 ||
-            (t === 2 && z >= 7.5) ||
-            (t === 3 && z >= 9.0) ||
-            (t === 4 && z >= 10.25);
+            (t === 2 && z >= 7.0) ||
+            (t === 3 && z >= 8.25) ||
+            (t === 4 && z >= 9.5);
 
           if (!eligibleByZoom) {
             if (map.hasLayer(item.marker)) {
@@ -1903,9 +1903,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
           // Project lat/lon to container pixel coordinates and check for bounding-box collisions
           const pt = map.latLngToContainerPoint([item.place.lat, item.place.lon]);
-          const charWidth = t === 1 ? 8.5 : t === 2 ? 7.6 : 7.0;
-          const halfW = (item.place.name.length * charWidth + 20) / 2;
-          const halfH = t === 1 ? 13 : t === 2 ? 11.5 : 10;
+          const charWidth = t === 1 ? 6.8 : t === 2 ? 6.2 : 5.8;
+          const halfW = (item.place.name.length * charWidth + 12) / 2;
+          const halfH = t === 1 ? 8.5 : t === 2 ? 7.5 : 6.8;
 
           const box = {
             x1: pt.x - halfW,
@@ -2096,13 +2096,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           img.crossOrigin = "anonymous";
           img.onload = function () {
             radarTileLoads++;
-            // Multi-pass organic cloud smoothing so radar cells have zero blockiness
+            // Crisp high-DPI 512px rendering with subtle 1.5px edge anti-aliasing (no smearing)
             ctx.save();
-            ctx.filter = "blur(9px) saturate(1.3)";
-            ctx.globalAlpha = 0.75;
+            ctx.filter = "blur(1.5px)";
+            ctx.globalAlpha = 0.92;
             ctx.drawImage(img, 0, 0, 512, 512);
-            ctx.filter = "blur(4px) saturate(1.2)";
-            ctx.globalAlpha = 0.85;
+            ctx.filter = "none";
+            ctx.globalAlpha = 0.65;
             ctx.drawImage(img, 0, 0, 512, 512);
             ctx.restore();
             done(null, canvas);
