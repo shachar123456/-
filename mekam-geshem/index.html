@@ -1958,7 +1958,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         );
       });
 
-      // One-minute loop of six real radar scans, advancing every 10 seconds.
+      // Six-scan loop advancing every 0.5 seconds; last frame is the newest real scan.
       let radarHost = "https://tilecache.rainviewer.com";
       let loopRadarFrames = [];
       let latestRadarFrame = null;
@@ -2077,17 +2077,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         relativeTimeEl.textContent = age;
         const visibleFrame = loopRadarFrames[Math.max(0, loopStep)] || latestRadarFrame;
         liveScanDockEl.textContent =
-          "תנועה " +
+          "מצב " +
           (Math.max(0, loopStep) + 1) +
           "/" +
           Math.max(1, loopRadarFrames.length) +
           " · " +
           formatIsraelTime(visibleFrame.time) +
-          " → חי " +
+          " · כל 0.5 שנ׳ → חי " +
           scanTime;
         liveBadgeEl.textContent = isUsingFallbackBootstrap
           ? "אין חיבור חי · ניסיון כל 10 שניות"
-          : "תנועה רציפה · 6 סריקות אמת";
+          : "6 מצבים · כל חצי שנייה";
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
           : "live-badge pulsing";
@@ -2109,39 +2109,34 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // Continuously morph across the six real scans for ~50s, then hold the newest for ~10s.
+      // Six real scans in a fast loop: advance every 0.5s, ending each cycle on the newest scan.
       function startMinuteLoop() {
         if (loopRafId) cancelAnimationFrame(loopRafId);
         if (!loopRadarLayers.length) return;
         loopStartedAt = performance.now();
         loopStep = -1;
-        const FRAME_SPAN_MS = 10000;
-        const HOLD_LATEST_MS = 10000;
-        const MOVE_MS = Math.max(FRAME_SPAN_MS, (loopRadarLayers.length - 1) * FRAME_SPAN_MS);
+
+        const FRAME_MS = 500;
+        const FADE_MS = 160;
+        const cycleMs = loopRadarLayers.length * FRAME_MS;
 
         function tick(now) {
-          const cycleMs = MOVE_MS + HOLD_LATEST_MS;
           const elapsed = (now - loopStartedAt) % cycleMs;
-          let fromIndex;
-          let toIndex;
-          let progress;
+          const exact = elapsed / FRAME_MS;
+          const fromIndex = Math.floor(exact) % loopRadarLayers.length;
+          const toIndex = (fromIndex + 1) % loopRadarLayers.length;
+          const within = exact - Math.floor(exact);
+          const progress = Math.min(1, within * (FRAME_MS / FADE_MS));
 
-          if (elapsed >= MOVE_MS) {
-            fromIndex = loopRadarLayers.length - 1;
-            toIndex = fromIndex;
-            progress = 1;
+          // On the final half-second of the cycle, hold the newest scan fully visible.
+          if (fromIndex === loopRadarLayers.length - 1) {
+            setLayerOpacities(fromIndex, fromIndex, 1);
           } else {
-            const exact = elapsed / FRAME_SPAN_MS;
-            fromIndex = Math.min(loopRadarLayers.length - 2, Math.floor(exact));
-            toIndex = Math.min(loopRadarLayers.length - 1, fromIndex + 1);
-            progress = exact - fromIndex;
+            setLayerOpacities(fromIndex, toIndex, progress);
           }
 
-          setLayerOpacities(fromIndex, toIndex, progress);
-
-          const displayStep = progress < 0.5 ? fromIndex : toIndex;
-          if (displayStep !== loopStep) {
-            loopStep = displayStep;
+          if (fromIndex !== loopStep) {
+            loopStep = fromIndex;
             updateLiveRadarUI();
           }
           loopRafId = requestAnimationFrame(tick);
