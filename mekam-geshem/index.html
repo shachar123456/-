@@ -1441,10 +1441,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- Hidden SVG Filter for High-Resolution Vector-Crisp Cloud Smoothing -->
   <svg width="0" height="0" style="position:absolute;width:0;height:0;pointer-events:none;" aria-hidden="true">
     <defs>
-      <filter id="radarSmoothFilter" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blurred" />
+      <filter id="radarSmoothFilter" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3.4" result="blurred" />
         <feComponentTransfer in="blurred" result="crispCloud">
-          <feFuncA type="linear" slope="1.55" intercept="-0.08" />
+          <feFuncA type="linear" slope="1.85" intercept="-0.14" />
         </feComponentTransfer>
       </filter>
     </defs>
@@ -1803,7 +1803,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       map.createPane("hebrewLabelsPane");
       map.getPane("hebrewLabelsPane").style.zIndex = 610;
 
-      // High-resolution Dark Basemap (Esri World Dark Gray + Dark-Mode Detailed Hebrew OSM + Built-in Hebrew Gazetteer)
+      // High-resolution Dark Basemap: Esri World Dark Gray Base + Dark-Mode Detailed Hebrew OpenStreetMap Overlay
       const ATTR_TEXT = 'רקע: Esri, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · מכ״ם: <a href="https://www.rainviewer.com/">RainViewer HD</a> | <a href="https://ims.gov.il/he/RadarSatellite">השמ״ט</a>';
       const darkBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
         maxNativeZoom: 16,
@@ -1811,12 +1811,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         attribution: ATTR_TEXT
       }).addTo(map);
 
-      // Detailed OpenStreetMap layer styled in dark mode (shows every street, neighborhood, kibbutz & moshav in Hebrew)
+      // Detailed OpenStreetMap layer styled in dark mode (shows every street, neighborhood, kibbutz & moshav in Hebrew as you zoom in)
       const darkOsmDetailed = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
+        opacity: 0.42,
         className: "osm-dark-hebrew-tiles",
         attribution: ATTR_TEXT
-      });
+      }).addTo(map);
 
       const lightOsmDetailed = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -1828,12 +1829,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (mapStyleBtn) {
         mapStyleBtn.addEventListener("click", function () {
           if (currentMapStyle === "dark") {
-            currentMapStyle = "dark-osm";
-            map.removeLayer(darkBase);
-            darkOsmDetailed.addTo(map);
-            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (כהה)";
-          } else if (currentMapStyle === "dark-osm") {
+            currentMapStyle = "dark-osm-full";
+            darkOsmDetailed.setOpacity(1);
+            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (כהה מלא)";
+          } else if (currentMapStyle === "dark-osm-full") {
             currentMapStyle = "light-osm";
+            map.removeLayer(darkBase);
             map.removeLayer(darkOsmDetailed);
             lightOsmDetailed.addTo(map);
             mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (בהיר)";
@@ -1841,26 +1842,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
             currentMapStyle = "dark";
             map.removeLayer(lightOsmDetailed);
             darkBase.addTo(map);
+            darkOsmDetailed.addTo(map);
+            syncDarkOsmOpacity();
             mapStyleBtn.textContent = "🗺️ מפה: כהה + כל היישובים";
           }
         });
       }
 
-      // Automatically switch to detailed dark OSM when zooming in past z >= 11 so every neighborhood & small settlement is visible
-      map.on("zoomend", function () {
-        if (currentMapStyle === "dark") {
-          if (map.getZoom() >= 11) {
-            if (!map.hasLayer(darkOsmDetailed)) {
-              darkOsmDetailed.addTo(map);
-              darkOsmDetailed.setOpacity(0.55);
-            }
-          } else {
-            if (map.hasLayer(darkOsmDetailed)) {
-              map.removeLayer(darkOsmDetailed);
-            }
-          }
-        }
-      });
+      function syncDarkOsmOpacity() {
+        if (currentMapStyle !== "dark") return;
+        const z = map.getZoom();
+        // Smoothly increase detailed Hebrew OSM visibility as the user zooms into cities & towns
+        const op = z >= 11 ? 0.88 : z >= 9.5 ? 0.68 : 0.42;
+        darkOsmDetailed.setOpacity(op);
+      }
+
+      map.on("zoomend", syncDarkOsmOpacity);
 
       // Progressive Hebrew City & Town Labels Layer with Dynamic Screen-Space Collision Avoidance
       const placeMarkers = ISRAEL_PLACES.slice()
@@ -2096,13 +2093,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           img.crossOrigin = "anonymous";
           img.onload = function () {
             radarTileLoads++;
-            // Crisp high-DPI 512px rendering with subtle 1.5px edge anti-aliasing (no smearing)
+            // High-DPI 512px rendering with smooth organic blur (eliminating all pixel stairs)
             ctx.save();
-            ctx.filter = "blur(1.5px)";
-            ctx.globalAlpha = 0.92;
-            ctx.drawImage(img, 0, 0, 512, 512);
-            ctx.filter = "none";
-            ctx.globalAlpha = 0.65;
+            ctx.filter = "blur(3.2px)";
+            ctx.globalAlpha = 0.96;
             ctx.drawImage(img, 0, 0, 512, 512);
             ctx.restore();
             done(null, canvas);
