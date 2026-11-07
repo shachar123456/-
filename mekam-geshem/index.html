@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <title>מכ״ם גשם ישראל — בזמן אמת</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1220'/%3E%3Cpath d='M22 42a10 10 0 0 1 0-20 13 13 0 0 1 25-2 9 9 0 0 1 1 18H22Z' fill='%2338bdf8'/%3E%3Cpath d='M24 47l-3 8M33 47l-3 8M42 47l-3 8' stroke='%2360a5fa' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M0 0h64v64H0z' fill='%23000'/%3E%3Cpath d='M38 0L64 0v64H22z' fill='%23F5F5F0'/%3E%3C/svg%3E">
   <style>
 /* required styles */
 
@@ -672,25 +675,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </style>
   <style>
     :root {
-      --bg-deep: #070c16;
-      --bg-glass: rgba(11, 18, 32, 0.86);
-      --bg-glass-strong: rgba(9, 15, 27, 0.94);
-      --bg-chip: rgba(30, 41, 59, 0.78);
-      --bg-chip-hover: rgba(51, 65, 85, 0.92);
-      --border-subtle: rgba(148, 163, 184, 0.18);
-      --border-bright: rgba(56, 189, 248, 0.45);
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-strong: #0284c7;
-      --emerald: #34d399;
-      --amber: #fbbf24;
-      --danger: #f87171;
-      --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.55);
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-pill: 999px;
-      --font-sans: system-ui, -apple-system, "Segoe UI", Rubik, Heebo, Arial, sans-serif;
+      --bg-deep: #000000;
+      --bg-cream: #F5F5F0;
+      --bg-panel: #000000;
+      --bg-panel-soft: #0a0a0a;
+      --bg-chip: #111111;
+      --bg-chip-hover: #1a1a1a;
+      --border-subtle: rgba(245, 245, 240, 0.22);
+      --border-bright: rgba(245, 245, 240, 0.72);
+      --text-main: #F5F5F0;
+      --text-muted: rgba(245, 245, 240, 0.62);
+      --text-on-cream: #000000;
+      --accent: #F5F5F0;
+      --accent-strong: #F5F5F0;
+      --live: #F5F5F0;
+      --warn: #F5F5F0;
+      --danger: #F5F5F0;
+      --shadow-lg: none;
+      --radius-lg: 0;
+      --radius-md: 0;
+      --radius-sm: 0;
+      --font-sans: "Heebo", "IBM Plex Sans", system-ui, sans-serif;
+      --diagonal: 115deg;
     }
 
     * {
@@ -710,7 +716,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       user-select: none;
     }
 
-    /* Layout Container */
     .app-shell {
       position: relative;
       width: 100%;
@@ -719,7 +724,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       flex-direction: column;
     }
 
-    /* Views */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .view-panel {
       position: absolute;
       inset: 0;
@@ -736,10 +752,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #map {
       width: 100%;
       height: 100%;
-      background: #070b13;
+      background: #000;
     }
 
-    /* Keep radar tiles crisp & ultra-smooth across zoom levels */
     .leaflet-container img.leaflet-tile {
       mix-blend-mode: normal;
       image-rendering: auto;
@@ -749,7 +764,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     .leaflet-radarPane-pane {
-      filter: url(#radarSmoothFilter) saturate(1.25) contrast(1.06) drop-shadow(0 0 6px rgba(56, 189, 248, 0.28));
+      filter: url(#radarSmoothFilter) saturate(1.2) contrast(1.05);
       will-change: opacity, transform;
     }
 
@@ -757,16 +772,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       image-rendering: auto;
     }
 
-    /* Dark-mode filter for detailed Hebrew OpenStreetMap tiles (when enabled) */
     .osm-dark-hebrew-tiles .leaflet-tile {
-      filter: invert(92%) hue-rotate(185deg) brightness(92%) contrast(92%) saturate(75%);
+      filter: invert(94%) hue-rotate(180deg) brightness(90%) contrast(95%) saturate(70%);
     }
 
     .leaflet-radarPane-pane .leaflet-layer {
       will-change: opacity;
     }
 
-    /* High-contrast, progressive Hebrew city & town labels on the map */
     .hebrew-place-marker {
       width: 1px !important;
       height: 1px !important;
@@ -784,19 +797,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       pointer-events: auto;
       cursor: pointer;
       font-family: var(--font-sans);
-      color: #f8fafc;
+      color: var(--bg-cream);
       text-shadow:
-        0 1px 3px rgba(2, 6, 23, 0.98),
-        0 0 6px rgba(2, 6, 23, 0.95),
-        0 0 12px rgba(2, 6, 23, 0.85);
+        0 1px 2px rgba(0, 0, 0, 0.98),
+        0 0 8px rgba(0, 0, 0, 0.9);
       display: block;
       transition: transform 0.15s ease, color 0.15s ease;
       user-select: none;
     }
 
     .hebrew-place-label:hover {
-      color: #38bdf8;
-      transform: translate(-50%, calc(-100% - 6px)) scale(1.1);
+      color: #fff;
+      transform: translate(-50%, calc(-100% - 6px)) scale(1.08);
       z-index: 950 !important;
     }
 
@@ -806,99 +818,84 @@ svg.leaflet-image-layer.leaflet-interactive path {
       left: 50%;
       top: calc(100% + 6px);
       transform: translate(-50%, -50%);
-      border-radius: 50%;
-      background: #e2e8f0;
-      box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+      background: var(--bg-cream);
       flex-shrink: 0;
     }
 
     .hebrew-place-label.tier-1 {
       font-size: 0.84rem;
       font-weight: 800;
-      color: #ffffff;
+      color: #fff;
     }
     .hebrew-place-label.tier-1::before {
       width: 6px;
       height: 6px;
-      background: #38bdf8;
-      border: 1px solid #fff;
+      border: 1px solid #000;
     }
 
     .hebrew-place-label.tier-2 {
       font-size: 0.76rem;
       font-weight: 700;
-      color: #f1f5f9;
     }
     .hebrew-place-label.tier-2::before {
       width: 4.5px;
       height: 4.5px;
-      background: #93c5fd;
     }
 
     .hebrew-place-label.tier-3 {
       font-size: 0.71rem;
       font-weight: 600;
-      color: #e2e8f0;
+      color: rgba(245, 245, 240, 0.88);
     }
     .hebrew-place-label.tier-3::before {
       width: 3.5px;
       height: 3.5px;
-      background: #cbd5e1;
     }
 
     .hebrew-place-label.tier-4 {
       font-size: 0.67rem;
       font-weight: 500;
-      color: #cbd5e1;
+      color: rgba(245, 245, 240, 0.72);
     }
     .hebrew-place-label.tier-4::before {
       width: 3px;
       height: 3px;
-      background: #94a3b8;
     }
 
     .map-style-btn {
       pointer-events: auto;
       appearance: none;
       border: 1px solid var(--border-subtle);
-      background: var(--bg-glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--bg-panel);
       color: var(--text-main);
       font-family: inherit;
       font-size: 0.75rem;
       font-weight: 600;
-      padding: 7px 11px;
+      padding: 8px 12px;
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-lg);
+      box-shadow: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
     .map-style-btn:hover {
-      border-color: var(--accent);
-      background: rgba(15, 23, 42, 0.92);
+      border-color: var(--border-bright);
+      background: var(--bg-cream);
+      color: var(--text-on-cream);
     }
 
     @keyframes livePulseTick {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 6px currentColor;
-      }
-      50% {
-        transform: scale(1.32);
-        box-shadow: 0 0 14px currentColor;
-      }
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.25); opacity: 0.55; }
     }
 
     .live-badge.pulsing::before {
-      animation: livePulseTick 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation: livePulseTick 1.2s ease-in-out infinite;
     }
 
-    /* Top Header Overlay */
     .top-overlay {
       position: absolute;
       top: max(12px, env(safe-area-inset-top));
@@ -909,48 +906,73 @@ svg.leaflet-image-layer.leaflet-interactive path {
       flex-direction: column;
       gap: 8px;
       pointer-events: none;
+      align-items: stretch;
     }
 
     .header-bar {
       pointer-events: auto;
-      background: var(--bg-glass);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 10px 14px;
-      box-shadow: var(--shadow-lg);
+      padding: 12px 16px;
+      box-shadow: none;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
       flex-wrap: wrap;
+      isolation: isolate;
+    }
+
+    .header-bar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        var(--diagonal),
+        transparent 68%,
+        transparent 68.2%,
+        var(--bg-cream) 68.35%
+      );
+      pointer-events: none;
+      z-index: -1;
+      animation: diagonalSettle 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    @keyframes diagonalSettle {
+      from { clip-path: inset(0 100% 0 0); }
+      to { clip-path: inset(0 0 0 0); }
     }
 
     .brand-group {
       display: flex;
       align-items: center;
       gap: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     .brand-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.4));
-      border: 1px solid rgba(56, 189, 248, 0.4);
+      width: 34px;
+      height: 34px;
+      border-radius: 0;
+      background:
+        linear-gradient(115deg, #000 0 58%, #F5F5F0 58.2% 100%);
+      border: 1px solid var(--border-bright);
       display: grid;
       place-items: center;
       flex-shrink: 0;
-      font-size: 19px;
+      font-size: 0;
     }
 
     .brand-title {
       margin: 0;
-      font-size: 1.08rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      color: #fff;
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-on-cream);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -958,19 +980,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .brand-sub {
       margin: 2px 0 0;
-      font-size: 0.76rem;
-      color: var(--text-muted);
+      font-size: 0.74rem;
+      color: rgba(0, 0, 0, 0.62);
+      font-weight: 500;
     }
 
-    /* Mode Tabs (Primary Radar / IMS / Windy Fallback) */
     .mode-tabs {
       display: flex;
       align-items: center;
-      background: rgba(15, 23, 42, 0.85);
-      padding: 4px;
-      border-radius: var(--radius-md);
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
       border: 1px solid var(--border-subtle);
-      gap: 4px;
+      gap: 0;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
     }
 
     .mode-tab {
@@ -981,30 +1006,36 @@ svg.leaflet-image-layer.leaflet-interactive path {
       font-family: inherit;
       font-size: 0.82rem;
       font-weight: 600;
-      padding: 6px 11px;
-      border-radius: 8px;
+      padding: 8px 12px;
+      border-radius: 0;
       cursor: pointer;
-      transition: all 0.16s ease;
+      transition: background 0.15s ease, color 0.15s ease;
       white-space: nowrap;
+    }
+
+    .mode-tab + .mode-tab {
+      border-inline-start: 1px solid var(--border-subtle);
     }
 
     .mode-tab:hover {
       color: var(--text-main);
-      background: rgba(255, 255, 255, 0.05);
+      background: #111;
     }
 
     .mode-tab.active {
-      background: var(--accent-strong);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.45);
+      background: var(--bg-cream);
+      color: var(--text-on-cream);
+      box-shadow: none;
     }
 
-    /* Clock & Status Pill */
     .status-cluster {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+      color: var(--text-main);
     }
 
     .clock-box {
@@ -1017,58 +1048,55 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .clock-time {
       font-size: 0.94rem;
       font-weight: 700;
-      color: #fff;
+      color: inherit;
       font-variant-numeric: tabular-nums;
+      font-family: "IBM Plex Sans", var(--font-sans);
     }
 
     .clock-ago {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
+      font-weight: 500;
     }
 
     .live-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
-      border-radius: var(--radius-pill);
+      padding: 5px 10px;
+      border-radius: 0;
       font-size: 0.74rem;
-      font-weight: 600;
-      background: rgba(52, 211, 153, 0.14);
-      color: var(--emerald);
-      border: 1px solid rgba(52, 211, 153, 0.32);
+      font-weight: 700;
+      background: transparent;
+      color: inherit;
+      border: 1px solid var(--border-subtle);
     }
 
     .live-badge::before {
       content: "";
       width: 7px;
       height: 7px;
-      border-radius: 50%;
+      border-radius: 0;
       background: currentColor;
-      box-shadow: 0 0 8px currentColor;
     }
 
-    .live-badge.history {
-      background: rgba(56, 189, 248, 0.14);
-      color: var(--accent);
-      border-color: rgba(56, 189, 248, 0.32);
-    }
-
+    .live-badge.history,
     .live-badge.warn {
-      background: rgba(251, 191, 36, 0.14);
-      color: var(--amber);
-      border-color: rgba(251, 191, 36, 0.35);
+      background: transparent;
+      color: inherit;
+      border-color: var(--border-subtle);
     }
 
-    /* City Chips Bar */
     .cities-row {
       pointer-events: auto;
       display: flex;
       align-items: center;
       gap: 6px;
       overflow-x: auto;
-      padding: 2px 2px 4px;
+      padding: 8px;
       scrollbar-width: none;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid var(--border-subtle);
     }
 
     .cities-row::-webkit-scrollbar {
@@ -1078,19 +1106,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .city-chip {
       appearance: none;
       border: 1px solid var(--border-subtle);
-      background: var(--bg-chip);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: var(--bg-panel);
       color: var(--text-main);
       font-family: inherit;
-      font-size: 0.81rem;
+      font-size: 0.8rem;
       font-weight: 500;
-      padding: 6px 12px;
-      border-radius: var(--radius-pill);
+      padding: 7px 12px;
+      border-radius: 0;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      box-shadow: none;
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -1098,29 +1124,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .city-chip:hover {
       background: var(--bg-chip-hover);
-      border-color: rgba(148, 163, 184, 0.4);
+      border-color: var(--border-bright);
       transform: translateY(-1px);
     }
 
     .city-chip.active {
-      background: rgba(2, 132, 199, 0.85);
-      border-color: var(--accent);
-      color: #fff;
-      font-weight: 600;
+      background: var(--bg-cream);
+      border-color: var(--bg-cream);
+      color: var(--text-on-cream);
+      font-weight: 700;
     }
 
     .city-chip.locate-chip {
-      background: rgba(14, 116, 144, 0.78);
-      border-color: rgba(56, 189, 248, 0.4);
-      color: #e0f2fe;
+      background: #000;
+      border-color: var(--border-bright);
+      color: var(--bg-cream);
       font-weight: 600;
     }
 
     .city-chip.locate-chip:hover {
-      background: rgba(2, 132, 199, 0.9);
+      background: var(--bg-cream);
+      color: var(--text-on-cream);
     }
 
-    /* Floating Legend & Dry Sky Note */
     .side-floating {
       position: absolute;
       left: 12px;
@@ -1135,32 +1161,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .legend-card {
       pointer-events: auto;
-      background: var(--bg-glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 0;
       padding: 8px 11px;
-      box-shadow: var(--shadow-lg);
+      box-shadow: none;
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 0.74rem;
       color: var(--text-muted);
-      /* Keep weak→strong left-to-right even on RTL pages so blue(weak) is not beside חזק */
       direction: ltr;
       unicode-bidi: isolate;
     }
 
     .legend-bar {
       width: 88px;
-      height: 8px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #38bdf8 0%, #22c55e 35%, #eab308 68%, #ef4444 88%, #d946ef 100%);
+      height: 7px;
+      border-radius: 0;
+      background: linear-gradient(90deg, #38bdf8 0%, #22c55e 35%, #eab308 68%, #ef4444 88%, #a3a3a3 100%);
       flex: 0 0 auto;
     }
 
-    /* Bottom Dock Controls */
     .bottom-dock {
       position: absolute;
       right: 12px;
@@ -1174,20 +1196,39 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .dock-card {
       pointer-events: auto;
+      position: relative;
+      overflow: hidden;
       width: min(720px, 100%);
-      background:
-        linear-gradient(135deg, rgba(14, 165, 233, 0.12), transparent 42%),
-        linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.88));
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      border-radius: 18px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
       padding: 12px 14px;
-      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      box-shadow: none;
       display: grid;
       grid-template-columns: 1.4fr 1fr auto;
       align-items: stretch;
       gap: 12px;
+      isolation: isolate;
+      animation: dockRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .dock-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        245deg,
+        transparent 74%,
+        transparent 74.2%,
+        var(--bg-cream) 74.35%
+      );
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes dockRise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .dock-live,
@@ -1198,10 +1239,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       justify-content: center;
       gap: 3px;
       padding: 2px 4px;
+      position: relative;
+      z-index: 1;
     }
 
     .dock-history {
-      border-right: 1px solid rgba(148, 163, 184, 0.22);
+      border-right: 1px solid var(--border-subtle);
       padding-right: 12px;
     }
 
@@ -1220,18 +1263,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       width: 8px;
       height: 8px;
       flex: 0 0 auto;
-      border-radius: 50%;
-      background: var(--emerald);
-      box-shadow: 0 0 10px var(--emerald);
+      border-radius: 0;
+      background: var(--bg-cream);
       animation: livePulseTick 1.5s ease-in-out infinite;
     }
 
     .dock-title {
       font-size: 0.92rem;
       font-weight: 700;
-      color: #f8fafc;
+      color: #fff;
       font-variant-numeric: tabular-nums;
       line-height: 1.25;
+      font-family: "IBM Plex Sans", var(--font-sans);
     }
 
     .dock-sub {
@@ -1246,14 +1289,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       justify-content: center;
       gap: 6px;
       font-size: 0.72rem;
-      color: var(--text-muted);
+      color: var(--text-on-cream);
       white-space: nowrap;
-      border-right: 1px solid rgba(148, 163, 184, 0.22);
+      border-right: 1px solid rgba(0, 0, 0, 0.18);
       padding: 2px 12px 2px 4px;
-      /* Low→high left-to-right so the blue slider does not feel inverted in RTL */
       direction: ltr;
       unicode-bidi: isolate;
       min-width: 132px;
+      position: relative;
+      z-index: 1;
+      font-weight: 600;
     }
 
     .opacity-box-top {
@@ -1261,40 +1306,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      color: #e2e8f0;
-      font-weight: 600;
+      color: var(--text-on-cream);
+      font-weight: 700;
     }
 
     .opacity-input {
       width: 100%;
-      accent-color: var(--accent);
+      accent-color: #000;
       cursor: pointer;
       direction: ltr;
     }
 
-    /* Alert Toast */
     .toast-banner {
       pointer-events: auto;
       align-self: center;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(251, 191, 36, 0.45);
-      color: #fde68a;
+      background: var(--bg-cream);
+      border: 1px solid #000;
+      color: #000;
       font-size: 0.8rem;
-      padding: 7px 14px;
-      border-radius: var(--radius-pill);
-      box-shadow: var(--shadow-lg);
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 0;
+      box-shadow: none;
       display: flex;
       align-items: center;
       gap: 8px;
+      animation: dockRise 0.35s ease both;
     }
 
     .toast-banner[hidden] {
       display: none !important;
     }
 
-    /* Secondary Views: IMS & Windy */
     .secondary-panel {
-      background: radial-gradient(circle at 50% 20%, #0f172a 0%, #070b13 100%);
+      background:
+        linear-gradient(115deg, #000 0 70%, #F5F5F0 70.15%),
+        #000;
       padding: 150px 16px 24px;
       overflow-y: auto;
     }
@@ -1308,11 +1355,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     .radar-card {
-      background: rgba(15, 23, 42, 0.85);
+      background: #000;
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
+      border-radius: 0;
       padding: 16px;
-      box-shadow: var(--shadow-lg);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -1340,8 +1387,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       width: 100%;
       aspect-ratio: 1 / 1;
       max-height: 440px;
-      background: #04070d;
-      border-radius: var(--radius-md);
+      background: #000;
+      border-radius: 0;
       border: 1px solid var(--border-subtle);
       overflow: hidden;
       display: grid;
@@ -1358,8 +1405,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       width: 100%;
       height: 440px;
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      background: #04070d;
+      border-radius: 0;
+      background: #000;
     }
 
     .card-actions {
@@ -1371,77 +1418,110 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .btn-action {
       appearance: none;
       border: 1px solid var(--border-bright);
-      background: rgba(2, 132, 199, 0.2);
-      color: #e0f2fe;
+      background: transparent;
+      color: var(--bg-cream);
       font-family: inherit;
       font-size: 0.8rem;
       font-weight: 600;
-      padding: 7px 12px;
-      border-radius: 8px;
+      padding: 8px 12px;
+      border-radius: 0;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
     .btn-action:hover {
-      background: rgba(2, 132, 199, 0.4);
+      background: var(--bg-cream);
+      color: #000;
     }
 
-    /* Selected city marker pulse */
     .city-pulse-icon {
       width: 14px;
       height: 14px;
-      border-radius: 50%;
-      background: #38bdf8;
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.32);
+      border-radius: 0;
+      background: var(--bg-cream);
+      border: 2px solid #000;
+      box-shadow: 0 0 0 4px rgba(245, 245, 240, 0.28);
     }
 
-    /* Leaflet attribution dark styling */
     .leaflet-control-attribution {
-      background: rgba(7, 12, 22, 0.75) !important;
-      color: #94a3b8 !important;
+      background: rgba(0, 0, 0, 0.82) !important;
+      color: rgba(245, 245, 240, 0.62) !important;
       font-size: 10px !important;
-      border-radius: 6px 0 0 0;
+      border-radius: 0;
     }
     .leaflet-control-attribution a {
-      color: #38bdf8 !important;
+      color: var(--bg-cream) !important;
+    }
+    .leaflet-bar {
+      border: 1px solid var(--border-subtle) !important;
+      border-radius: 0 !important;
+      overflow: hidden;
     }
     .leaflet-bar a {
-      background-color: rgba(15, 23, 42, 0.9) !important;
-      color: #f1f5f9 !important;
-      border-color: rgba(148, 163, 184, 0.22) !important;
+      background-color: #000 !important;
+      color: var(--bg-cream) !important;
+      border-color: var(--border-subtle) !important;
+      border-radius: 0 !important;
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
     }
     .leaflet-bar a:hover {
-      background-color: rgba(30, 41, 59, 0.95) !important;
+      background-color: var(--bg-cream) !important;
+      color: #000 !important;
     }
 
-    /* Responsive adjustments */
     @media (max-width: 760px) {
       .header-bar {
-        padding: 8px 10px;
+        padding: 10px 12px;
         gap: 8px;
+      }
+      .header-bar::after {
+        background: linear-gradient(
+          var(--diagonal),
+          transparent 94%,
+          transparent 94.2%,
+          var(--bg-cream) 94.35%
+        );
       }
       .brand-sub {
         display: none;
       }
+      .brand-title {
+        color: var(--text-main);
+      }
       .dock-card {
         grid-template-columns: auto 1fr;
         gap: 10px;
-        padding: 9px 11px;
+        padding: 10px 12px;
+      }
+      .dock-card::after {
+        background: linear-gradient(
+          245deg,
+          transparent 86%,
+          transparent 86.2%,
+          var(--bg-cream) 86.35%
+        );
       }
       .opacity-box {
         grid-column: 1 / -1;
         border-right: 0;
         border-top: 1px solid var(--border-subtle);
         padding-right: 0;
-        padding-top: 6px;
+        padding-top: 8px;
         justify-content: space-between;
+        color: var(--text-main);
+      }
+      .opacity-box-top {
+        color: var(--text-main);
       }
       .opacity-input {
         flex: 1;
+        accent-color: var(--bg-cream);
       }
       .side-floating {
         bottom: calc(142px + env(safe-area-inset-bottom));
@@ -1451,8 +1531,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       .secondary-panel {
         padding-top: 165px;
+        background: #000;
       }
     }
+  </style>
   </style>
 </head>
 <body>
@@ -1469,34 +1551,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </svg>
 
   <div class="app-shell">
-    <!-- Top Floating Header + City Chips -->
+    <h1 class="visually-hidden">מכ״ם גשם ישראל</h1>
+    <!-- Location chips only — map is full-bleed underneath -->
     <header class="top-overlay">
-      <div class="header-bar">
-        <div class="brand-group">
-          <div class="brand-icon" aria-hidden="true">🌧️</div>
-          <div>
-            <h1 class="brand-title">מכ״ם גשם ישראל</h1>
-            <p class="brand-sub" id="brandSub">בדיקת נתונים כל 3 שניות · שעון ישראל בזמן אמת</p>
-          </div>
-        </div>
-
-        <div class="mode-tabs" role="tablist" aria-label="תצוגת מכ״ם">
-          <button type="button" class="mode-tab active" data-view="map" role="tab" aria-selected="true">מפה חיה</button>
-          <button type="button" class="mode-tab" data-view="fallback" role="tab" aria-selected="false">מכ״ם השמ״ט / Windy</button>
-        </div>
-
-        <div class="status-cluster">
-          <span id="liveBadge" class="live-badge pulsing">חי · בדיקה כל 3 שניות</span>
-          <div class="clock-box">
-            <span id="timestamp" class="clock-time">--:--:--</span>
-            <span id="relativeTime" class="clock-ago">טוען פריימים…</span>
-          </div>
-        </div>
-      </div>
-
       <nav class="cities-row" id="citiesBar" aria-label="ערים מהירות בישראל">
-        <button type="button" class="city-chip locate-chip" id="locateBtn" title="התמקד במיקום הנוכחי שלי">📍 המיקום שלי</button>
-        <button type="button" class="city-chip" data-reset="true" title="תצוגת כל ישראל">🇮🇱 כל הארץ</button>
+        <button type="button" class="city-chip locate-chip" id="locateBtn" title="התמקד במיקום הנוכחי שלי">המיקום שלי</button>
+        <button type="button" class="city-chip" data-reset="true" title="תצוגת כל ישראל">כל הארץ</button>
       </nav>
 
       <div id="toastBanner" class="toast-banner" role="status" hidden></div>
@@ -1505,42 +1565,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Primary Interactive Map View -->
     <main id="viewMap" class="view-panel active">
       <div id="map" aria-label="מפת מכ״ם גשם אינטראקטיבית"></div>
-
-      <aside class="side-floating" aria-label="מקרא עוצמת גשם ותצוגת מפה">
-        <button type="button" class="map-style-btn" id="mapStyleBtn" title="החלף סגנון מפה (כהה / רחובות ויישובים מפורטים)">🗺️ מפה: כהה + כל היישובים</button>
-        <div class="legend-card" title="כאשר המפה נקייה מצבעים מעל ישראל — השמיים יבשים כעת">
-          <span>חלש</span>
-          <div class="legend-bar"></div>
-          <span>חזק</span>
-        </div>
-      </aside>
-
-      <footer class="bottom-dock">
-        <div class="dock-card">
-          <div class="dock-live" aria-live="polite">
-            <div class="dock-kicker">
-              <span class="live-scan-dot" aria-hidden="true"></span>
-              <span>עכשיו · סריקה חיה</span>
-            </div>
-            <div class="dock-title" id="liveScanDock">טוען סריקה חיה…</div>
-            <div class="dock-sub" id="liveScanAge">הענן מתעדכן יחד עם הרענון</div>
-          </div>
-
-          <div class="dock-history">
-            <div class="dock-kicker">היסטוריה · תאריך וזמן</div>
-            <div class="dock-title" id="historyDateTime">—</div>
-            <div class="dock-sub" id="historyMeta">סריקה קודמת כשתגיע</div>
-          </div>
-
-          <label class="opacity-box" for="opacitySlider">
-            <div class="opacity-box-top">
-              <span>שקיפות</span>
-              <span id="opacityValue">85%</span>
-            </div>
-            <input type="range" id="opacitySlider" class="opacity-input" min="15" max="100" value="85">
-          </label>
-        </div>
-      </footer>
     </main>
 
     <!-- Secondary / Fallback Panel: IMS Direct Radar + Windy / RainViewer Embed -->
@@ -1557,8 +1581,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <p id="imsStatusNote"></p>
           <div class="card-actions">
-            <button type="button" class="btn-action" id="refreshImsBtn">🔄 רענן תמונת שמ״ט</button>
-            <a class="btn-action" href="https://ims.gov.il/he/RadarSatellite" target="_blank" rel="noopener">↗ אתר השירות המטאורולוגי</a>
+            <button type="button" class="btn-action" id="refreshImsBtn">רענן תמונת שמ״ט</button>
+            <a class="btn-action" href="https://ims.gov.il/he/RadarSatellite" target="_blank" rel="noopener">אתר השירות המטאורולוגי</a>
           </div>
         </article>
 
@@ -1577,8 +1601,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
             allowfullscreen>
           </iframe>
           <div class="card-actions">
-            <a class="btn-action" href="https://www.windy.com/-Weather-radar-radar?radar,31.500,34.850,7" target="_blank" rel="noopener">↗ פתח ב־Windy</a>
-            <a class="btn-action" href="https://www.rainviewer.com/map.html?loc=31.5,34.85,7" target="_blank" rel="noopener">↗ פתח ב־RainViewer</a>
+            <a class="btn-action" href="https://www.windy.com/-Weather-radar-radar?radar,31.500,34.850,7" target="_blank" rel="noopener">פתח ב־Windy</a>
+            <a class="btn-action" href="https://www.rainviewer.com/map.html?loc=31.5,34.85,7" target="_blank" rel="noopener">פתח ב־RainViewer</a>
           </div>
         </article>
       </div>
@@ -1742,22 +1766,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
         { name: "עומר", lat: 31.2672, lon: 34.8492, tier: 4 }
       ];
 
-      // DOM elements
-      const timestampEl = document.getElementById("timestamp");
-      const relativeTimeEl = document.getElementById("relativeTime");
-      const liveBadgeEl = document.getElementById("liveBadge");
-      const liveScanDockEl = document.getElementById("liveScanDock");
-      const liveScanAgeEl = document.getElementById("liveScanAge");
-      const historyDateTimeEl = document.getElementById("historyDateTime");
-      const historyMetaEl = document.getElementById("historyMeta");
-      const opacitySlider = document.getElementById("opacitySlider");
-      const opacityValue = document.getElementById("opacityValue");
+      // DOM elements (map + location chips UI; optional chrome may be absent)
       const citiesBar = document.getElementById("citiesBar");
       const locateBtn = document.getElementById("locateBtn");
       const toastBanner = document.getElementById("toastBanner");
 
       let toastTimer = null;
       function showToast(msg, durationMs) {
+        if (!toastBanner) return;
         if (toastTimer) clearTimeout(toastTimer);
         if (!msg) {
           toastBanner.hidden = true;
@@ -1772,29 +1788,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      // View switcher (Map vs Fallback)
-      const modeTabs = document.querySelectorAll(".mode-tab");
+      // View switcher kept for location handlers; fallback UI is not exposed in the simplified chrome
       const viewMap = document.getElementById("viewMap");
       const viewFallback = document.getElementById("viewFallback");
 
       function switchView(target) {
-        modeTabs.forEach(function (btn) {
-          const active = btn.getAttribute("data-view") === target;
-          btn.classList.toggle("active", active);
-          btn.setAttribute("aria-selected", active ? "true" : "false");
-        });
-        viewMap.classList.toggle("active", target === "map");
-        viewFallback.classList.toggle("active", target === "fallback");
+        if (viewMap) viewMap.classList.toggle("active", target === "map");
+        if (viewFallback) viewFallback.classList.toggle("active", target === "fallback");
         if (target === "map" && map) {
           setTimeout(function () { map.invalidateSize(); }, 60);
         }
       }
-
-      modeTabs.forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          switchView(btn.getAttribute("data-view"));
-        });
-      });
 
       // Initialize Leaflet Map centered on Israel (~31.5, 34.85) with smooth inertia & deep zoom
       const map = L.map("map", {
@@ -1843,29 +1847,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       });
 
       let currentMapStyle = "dark";
-      const mapStyleBtn = document.getElementById("mapStyleBtn");
-      if (mapStyleBtn) {
-        mapStyleBtn.addEventListener("click", function () {
-          if (currentMapStyle === "dark") {
-            currentMapStyle = "dark-osm-full";
-            darkOsmDetailed.setOpacity(1);
-            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (כהה מלא)";
-          } else if (currentMapStyle === "dark-osm-full") {
-            currentMapStyle = "light-osm";
-            map.removeLayer(darkBase);
-            map.removeLayer(darkOsmDetailed);
-            lightOsmDetailed.addTo(map);
-            mapStyleBtn.textContent = "🗺️ מפה: רחובות ויישובים (בהיר)";
-          } else {
-            currentMapStyle = "dark";
-            map.removeLayer(lightOsmDetailed);
-            darkBase.addTo(map);
-            darkOsmDetailed.addTo(map);
-            syncDarkOsmOpacity();
-            mapStyleBtn.textContent = "🗺️ מפה: כהה + כל היישובים";
-          }
-        });
-      }
 
       function syncDarkOsmOpacity() {
         if (currentMapStyle !== "dark") return;
@@ -2121,7 +2102,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           img.onerror = function (err) {
             radarTileErrors++;
             if (radarTileErrors >= 6 && radarTileLoads === 0) {
-              showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — ניתן לעבור ללשונית ״מכ״ם השמ״ט / Windy״.", 8000);
+              showToast("חלק מאריחי המכ״ם נחסמו בדפדפן — נסו לרענן או לפתוח שוב מאוחר יותר.", 8000);
             }
             done(err, canvas);
           };
@@ -2145,41 +2126,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
 
       function updateLiveRadarUI() {
-        if (!latestRadarFrame) {
-          timestampEl.textContent = "חי " + formatLiveClockNow();
-          relativeTimeEl.textContent = "ממתין לסריקת מכ״ם עדכנית…";
-          liveScanDockEl.textContent = "טוען סריקה חיה…";
-          liveScanAgeEl.textContent = "הענן מתעדכן יחד עם הרענון";
-          historyDateTimeEl.textContent = "—";
-          historyMetaEl.textContent = "סריקה קודמת כשתגיע";
-          return;
-        }
-
-        const liveStamp = formatIsraelDateTime(latestRadarFrame.time);
-        const liveClock = formatLiveClockNow();
-        const age = formatRelativeAgo(latestRadarFrame.time);
-
-        timestampEl.textContent = formatIsraelTime(latestRadarFrame.time) + " · חי " + liveClock;
-        relativeTimeEl.textContent = age + " · נבדק חי";
-        liveScanDockEl.textContent = liveStamp;
-        liveScanAgeEl.textContent = isRefreshingCloud
-          ? "מרענן ענן ומדידה יחד…"
-          : (age + " · פייד רציף + רענון מסונכרן");
-
-        if (previousRadarFrame && previousRadarFrame.path !== latestRadarFrame.path) {
-          historyDateTimeEl.textContent = formatIsraelDateTime(previousRadarFrame.time);
-          historyMetaEl.textContent = "סריקה קודמת · " + formatRelativeAgo(previousRadarFrame.time);
-        } else {
-          historyDateTimeEl.textContent = liveStamp;
-          historyMetaEl.textContent = "זו הסריקה העדכנית ביותר כרגע";
-        }
-
-        liveBadgeEl.textContent = isUsingFallbackBootstrap
-          ? "אין חיבור חי · ניסיון כל 3 שניות"
-          : (isRefreshingCloud ? "מרענן ענן…" : "חי · פייד עדין");
-        liveBadgeEl.className = isUsingFallbackBootstrap
-          ? "live-badge warn pulsing"
-          : "live-badge pulsing";
+        // Status chrome removed from the simplified map-only UI; keep hook for clock tick.
       }
 
       function cloudBreathFactor() {
@@ -2277,13 +2224,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         nextLayer.once("load", beginSwitch);
         setTimeout(beginSwitch, 2800);
       }
-
-      opacitySlider.addEventListener("input", function () {
-        const val = Number(opacitySlider.value);
-        radarOpacity = val / 100;
-        opacityValue.textContent = val + "%";
-        applyActiveCloudOpacity();
-      });
 
       function applyRadarPayload(data, isFallbackBootstrap) {
         if (!data || !data.radar || !Array.isArray(data.radar.past) || !data.radar.past.length) {
@@ -2396,14 +2336,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      // Start everything: real-time clock every second, upstream radar check every 3 seconds.
+      // Start everything: upstream radar check every 3 seconds.
       // RainViewer publishes a new measured radar frame roughly every 10 minutes; we never
       // relabel an older measurement as "now", and switch immediately when a new frame appears.
       fetchRainViewerData(false);
       loadImsImage(10);
-      setInterval(function () {
-        updateLiveRadarUI();
-      }, 1000);
       setInterval(function () {
         fetchRainViewerData(true);
       }, 3000);
