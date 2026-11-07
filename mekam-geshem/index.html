@@ -749,7 +749,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     .leaflet-radarPane-pane {
-      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.32)) saturate(1.25);
+      filter: blur(5.5px) contrast(1.14) saturate(1.28) drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
       will-change: opacity, transform;
     }
 
@@ -1862,35 +1862,69 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       });
 
-      // Progressive Hebrew City & Town Labels Layer (Reveals More Cities as You Zoom In)
-      const placeMarkers = ISRAEL_PLACES.map(function (place) {
-        const icon = L.divIcon({
-          className: "",
-          html: '<div class="hebrew-place-label tier-' + place.tier + '">' + place.name + "</div>",
-          iconSize: [0, 0]
+      // Progressive Hebrew City & Town Labels Layer with Dynamic Screen-Space Collision Avoidance
+      const placeMarkers = ISRAEL_PLACES.slice()
+        .sort(function (a, b) { return a.tier - b.tier; })
+        .map(function (place) {
+          const icon = L.divIcon({
+            className: "",
+            html: '<div class="hebrew-place-label tier-' + place.tier + '">' + place.name + "</div>",
+            iconSize: [0, 0]
+          });
+          const m = L.marker([place.lat, place.lon], {
+            icon: icon,
+            pane: "hebrewLabelsPane",
+            interactive: true
+          });
+          m.on("click", function () {
+            map.flyTo([place.lat, place.lon], Math.max(map.getZoom(), 11.5), { duration: 0.75 });
+          });
+          return { place: place, marker: m };
         });
-        const m = L.marker([place.lat, place.lon], {
-          icon: icon,
-          pane: "hebrewLabelsPane",
-          interactive: true
-        });
-        m.on("click", function () {
-          map.flyTo([place.lat, place.lon], Math.max(map.getZoom(), 11.5), { duration: 0.75 });
-        });
-        return { place: place, marker: m };
-      });
 
       function updateVisiblePlaceLabels() {
         const z = map.getZoom();
+        const placedBoxes = [];
+
         placeMarkers.forEach(function (item) {
           const t = item.place.tier;
-          const shouldShow =
+          const eligibleByZoom =
             t === 1 ||
-            (t === 2 && z >= 7) ||
-            (t === 3 && z >= 8.5) ||
-            (t === 4 && z >= 9.75);
+            (t === 2 && z >= 7.5) ||
+            (t === 3 && z >= 9.0) ||
+            (t === 4 && z >= 10.25);
 
-          if (shouldShow) {
+          if (!eligibleByZoom) {
+            if (map.hasLayer(item.marker)) {
+              map.removeLayer(item.marker);
+            }
+            return;
+          }
+
+          // Project lat/lon to container pixel coordinates and check for bounding-box collisions
+          const pt = map.latLngToContainerPoint([item.place.lat, item.place.lon]);
+          const charWidth = t === 1 ? 8.5 : t === 2 ? 7.6 : 7.0;
+          const halfW = (item.place.name.length * charWidth + 20) / 2;
+          const halfH = t === 1 ? 13 : t === 2 ? 11.5 : 10;
+
+          const box = {
+            x1: pt.x - halfW,
+            y1: pt.y - halfH,
+            x2: pt.x + halfW,
+            y2: pt.y + halfH
+          };
+
+          let collides = false;
+          for (let i = 0; i < placedBoxes.length; i++) {
+            const b = placedBoxes[i];
+            if (!(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2)) {
+              collides = true;
+              break;
+            }
+          }
+
+          if (!collides) {
+            placedBoxes.push(box);
             if (!map.hasLayer(item.marker)) {
               item.marker.addTo(map);
             }
@@ -1902,7 +1936,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      map.on("zoomend", updateVisiblePlaceLabels);
+      map.on("zoomend moveend", updateVisiblePlaceLabels);
       updateVisiblePlaceLabels();
 
       // City chips & marker highlight
@@ -2062,12 +2096,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
           img.crossOrigin = "anonymous";
           img.onload = function () {
             radarTileLoads++;
-            // Multi-pass soft organic cloud rendering so radar cells have zero pixelation
+            // Multi-pass organic cloud smoothing so radar cells have zero blockiness
             ctx.save();
-            ctx.filter = "blur(6px) saturate(1.25)";
-            ctx.globalAlpha = 0.65;
+            ctx.filter = "blur(9px) saturate(1.3)";
+            ctx.globalAlpha = 0.75;
             ctx.drawImage(img, 0, 0, 512, 512);
-            ctx.filter = "blur(2.2px) saturate(1.15)";
+            ctx.filter = "blur(4px) saturate(1.2)";
             ctx.globalAlpha = 0.85;
             ctx.drawImage(img, 0, 0, 512, 512);
             ctx.restore();
