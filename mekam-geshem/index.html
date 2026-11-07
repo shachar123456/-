@@ -765,6 +765,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .leaflet-radarPane-pane {
       filter: url(#radarSmoothFilter) saturate(1.2) contrast(1.05);
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
       backface-visibility: hidden;
     }
 
@@ -2212,6 +2214,69 @@ svg.leaflet-image-layer.leaflet-interactive path {
       let windDebounceTimer = null;
       let lastWindQueryKey = "";
 
+      // Ultra-gentle radar-pane drift along wind TO (same convention as compass arrow).
+      // Amplitude ~2px, ~40s cycle → peak ~0.31 px/s. No opacity pulse.
+      const radarPaneEl = map.getPane("radarPane");
+      const CLOUD_DRIFT_AMPLITUDE_PX = 2;
+      const CLOUD_DRIFT_PERIOD_SEC = 40;
+      // Fallback before wind loads: west → east (blows TO 90° / east).
+      let cloudDriftToDeg = 90;
+      let cloudDriftPhase = 0;
+      let cloudDriftRafId = null;
+      let cloudDriftPaused = false;
+
+      function setCloudDriftToBearing(toDeg) {
+        cloudDriftToDeg = normalizeDeg(toDeg);
+      }
+
+      function cloudDriftOffset() {
+        const dist = Math.sin(cloudDriftPhase) * CLOUD_DRIFT_AMPLITUDE_PX;
+        const rad = (cloudDriftToDeg * Math.PI) / 180;
+        // Screen: 0° = north (−y), 90° = east (+x) — matches compass TO arrow.
+        return {
+          x: Math.sin(rad) * dist,
+          y: -Math.cos(rad) * dist
+        };
+      }
+
+      function applyCloudDriftTransform() {
+        if (!radarPaneEl || cloudDriftPaused) return;
+        const o = cloudDriftOffset();
+        radarPaneEl.style.transform =
+          "translate3d(" + o.x.toFixed(3) + "px," + o.y.toFixed(3) + "px,0)";
+      }
+
+      function startCloudDrift() {
+        if (cloudDriftRafId) return;
+        let last = performance.now();
+        function tick(now) {
+          const dt = Math.min(0.05, (now - last) / 1000);
+          last = now;
+          if (!cloudDriftPaused) {
+            cloudDriftPhase += dt * ((Math.PI * 2) / CLOUD_DRIFT_PERIOD_SEC);
+            applyCloudDriftTransform();
+          }
+          cloudDriftRafId = requestAnimationFrame(tick);
+        }
+        cloudDriftRafId = requestAnimationFrame(tick);
+      }
+
+      // Keep Leaflet zoom math clean: zero overlay offset during zoom, then re-sync.
+      map.on("zoomstart", function () {
+        cloudDriftPaused = true;
+        if (radarPaneEl) {
+          radarPaneEl.style.transform = "translate3d(0,0,0)";
+        }
+      });
+      map.on("zoomend", function () {
+        cloudDriftPaused = false;
+        cloudDriftPhase = 0;
+        applyCloudDriftTransform();
+      });
+      map.on("moveend", function () {
+        if (!cloudDriftPaused) applyCloudDriftTransform();
+      });
+
       function setWindLoading() {
         if (!windCompassEl) return;
         windCompassEl.setAttribute("data-state", "loading");
@@ -2224,6 +2289,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         windCompassEl.setAttribute("data-state", "error");
         if (windFromLabelEl) windFromLabelEl.textContent = "רוח לא זמינה";
         if (windToLabelEl) windToLabelEl.textContent = "ננסה שוב בקרוב";
+        // Keep last known drift bearing; default west→east already set until first reading.
       }
 
       function applyWindReading(fromDeg, speedKmh) {
@@ -2233,6 +2299,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         const fromName = hebrewWindSector(from);
         const toName = hebrewWindSector(to);
         const speed = Math.round(Number(speedKmh) * 10) / 10;
+
+        setCloudDriftToBearing(to);
 
         windCompassEl.setAttribute("data-state", "ready");
         if (windArrowEl) {
@@ -2311,7 +2379,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }, WIND_POLL_MS);
 
       // Calm live-only radar: show the latest RainViewer scan, poll for a newer one,
-      // and swap only when a real new frame arrives. No history loop / playhead / drift.
+      // and swap only when a real new frame arrives. No history loop / playhead / opacity pulse.
+      // Radar pane gets an ultra-gentle wind-TO translate (~2px / ~40s) separately.
       let radarHost = "https://tilecache.rainviewer.com";
       let latestRadarFrame = null;
       let radarOpacity = 0.85;
@@ -2466,7 +2535,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             outgoingRadarLayer = null;
           }
 
-          // First paint: show the live frame at steady opacity — no pulse/drift.
+          // First paint: show the live frame at steady opacity — no pulse.
           if (!activeRadarLayer) {
             activeRadarLayer = nextLayer;
             nextLayer.setOpacity(radarOpacity);
@@ -2612,6 +2681,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
 
       // Start everything: poll for a newer RainViewer scan (~10s). Swap only on a real new frame.
+      startCloudDrift();
       fetchRainViewerData(false);
       loadImsImage(10);
       setInterval(function () {
