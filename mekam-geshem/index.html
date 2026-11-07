@@ -765,7 +765,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .leaflet-radarPane-pane {
       filter: url(#radarSmoothFilter) saturate(1.2) contrast(1.05);
-      will-change: opacity, transform;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
     }
 
     .leaflet-radarPane-pane canvas.leaflet-tile {
@@ -2006,6 +2008,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       });
 
       // Single live radar image: cloud and refresh move together when a new scan arrives.
+      // Fast opacity pulse + light drift along estimated storm motion (not a history loop).
       let radarHost = "https://tilecache.rainviewer.com";
       let previousRadarFrame = null;
       let latestRadarFrame = null;
@@ -2015,12 +2018,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       let fadeRafId = null;
       let breathRafId = null;
       let breathPhase = 0;
+      // Prevailing Israel storm drift fallback: west → east / SW → NE (screen: +x, slightly −y).
+      let cloudMotionX = 0.92;
+      let cloudMotionY = -0.35;
+      let motionEstimateInFlight = false;
+      let lastMotionEstimateKey = "";
+      const CLOUD_FADE_PERIOD_SEC = 1.05;
+      const CLOUD_DRIFT_PX = 11;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
       let lastKnownSignature = "";
       let fetchInFlight = false;
       let isUsingFallbackBootstrap = false;
       let isRefreshingCloud = false;
+      const radarPaneEl = map.getPane("radarPane");
 
       const timeFormatter = new Intl.DateTimeFormat("he-IL", {
         timeZone: "Asia/Jerusalem",
@@ -2129,12 +2140,161 @@ svg.leaflet-image-layer.leaflet-interactive path {
         // Status chrome removed from the simplified map-only UI; keep hook for radar refresh path.
       }
 
-      function cloudBreathFactor() {
-        // Soft continuous fade so the live cloud feels in motion between scans.
-        return 0.72 + 0.28 * (0.5 - 0.5 * Math.cos(breathPhase));
+      function normalizeMotion(dx, dy) {
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-6) return { x: 0.92, y: -0.35 };
+        return { x: dx / len, y: dy / len };
       }
 
-      function applyActiveCloudOpacity() {
+      function latLngToTileXY(lat, lng, z) {
+        const n = Math.pow(2, z);
+        const x = Math.floor(((lng + 180) / 360) * n);
+        const latRad = (lat * Math.PI) / 180;
+        const y = Math.floor(
+          ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+        );
+        return { x: x, y: y, z: z };
+      }
+
+      function loadRadarTileImage(frame, tile) {
+        const url =
+          radarHost +
+          frame.path +
+          "/256/" +
+          tile.z +
+          "/" +
+          tile.x +
+          "/" +
+          tile.y +
+          "/2/1_1.png";
+        return new Promise(function (resolve, reject) {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = function () {
+            resolve(img);
+          };
+          img.onerror = function () {
+            reject(new Error("tile load failed"));
+          };
+          img.src = url;
+        });
+      }
+
+      function sampleRainField(img, size) {
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, size, size);
+        const data = ctx.getImageData(0, 0, size, size).data;
+        const field = new Float32Array(size * size);
+        let rainCells = 0;
+        for (let i = 0; i < size * size; i++) {
+          const o = i * 4;
+          const alpha = data[o + 3];
+          const lum = data[o] + data[o + 1] + data[o + 2];
+          if (alpha > 40 && lum > 36) {
+            field[i] = lum;
+            rainCells++;
+          }
+        }
+        return { field: field, rainCells: rainCells, size: size };
+      }
+
+      function estimateShiftBetweenFields(prev, next, maxShift) {
+        const size = prev.size;
+        let bestScore = -1;
+        let bestDx = 0;
+        let bestDy = 0;
+        const margin = maxShift;
+        for (let dy = -maxShift; dy <= maxShift; dy++) {
+          for (let dx = -maxShift; dx <= maxShift; dx++) {
+            let score = 0;
+            let n = 0;
+            for (let y = margin; y < size - margin; y++) {
+              const row = y * size;
+              const prevRow = (y - dy) * size;
+              for (let x = margin; x < size - margin; x++) {
+                const nv = next.field[row + x];
+                if (!nv) continue;
+                const pv = prev.field[prevRow + (x - dx)];
+                if (!pv) continue;
+                score += nv * pv;
+                n++;
+              }
+            }
+            if (n < 24) continue;
+            score /= n;
+            if (score > bestScore) {
+              bestScore = score;
+              bestDx = dx;
+              bestDy = dy;
+            }
+          }
+        }
+        return { dx: bestDx, dy: bestDy, score: bestScore };
+      }
+
+      function estimateCloudMotionFromFrames(prevFrame, nextFrame) {
+        if (!prevFrame || !nextFrame || motionEstimateInFlight) return;
+        const key = prevFrame.path + "→" + nextFrame.path;
+        if (key === lastMotionEstimateKey) return;
+        motionEstimateInFlight = true;
+        lastMotionEstimateKey = key;
+
+        const tile = latLngToTileXY(ISRAEL_CENTER[0], ISRAEL_CENTER[1], 6);
+        Promise.all([
+          loadRadarTileImage(prevFrame, tile),
+          loadRadarTileImage(nextFrame, tile)
+        ])
+          .then(function (images) {
+            const prevField = sampleRainField(images[0], 64);
+            const nextField = sampleRainField(images[1], 64);
+            if (prevField.rainCells < 40 || nextField.rainCells < 40) {
+              return;
+            }
+            const shift = estimateShiftBetweenFields(prevField, nextField, 6);
+            if (!(shift.score > 0) || (shift.dx === 0 && shift.dy === 0)) {
+              return;
+            }
+            // Blend toward the measured frame-to-frame translation for stability.
+            const measured = normalizeMotion(shift.dx, shift.dy);
+            cloudMotionX = cloudMotionX * 0.35 + measured.x * 0.65;
+            cloudMotionY = cloudMotionY * 0.35 + measured.y * 0.65;
+            const blended = normalizeMotion(cloudMotionX, cloudMotionY);
+            cloudMotionX = blended.x;
+            cloudMotionY = blended.y;
+          })
+          .catch(function () {
+            // Keep prevailing Israel drift fallback on estimate failures.
+          })
+          .then(function () {
+            motionEstimateInFlight = false;
+          });
+      }
+
+      function cloudBreathFactor() {
+        // Fast fade pulse between scans — sharper than a slow opacity breathe.
+        const wave = 0.5 - 0.5 * Math.cos(breathPhase);
+        return 0.52 + 0.48 * wave;
+      }
+
+      function cloudDriftOffset() {
+        // Drift along storm motion; cycle wraps while opacity is near its trough.
+        const cycle = (breathPhase / (Math.PI * 2)) % 1;
+        const ease = cycle * cycle * (3 - 2 * cycle);
+        return {
+          x: ease * CLOUD_DRIFT_PX * cloudMotionX,
+          y: ease * CLOUD_DRIFT_PX * cloudMotionY
+        };
+      }
+
+      function applyCloudMotionVisuals() {
+        if (radarPaneEl) {
+          const drift = cloudDriftOffset();
+          radarPaneEl.style.transform =
+            "translate3d(" + drift.x.toFixed(2) + "px," + drift.y.toFixed(2) + "px,0)";
+        }
         if (activeRadarLayer && !isRefreshingCloud) {
           activeRadarLayer.setOpacity(radarOpacity * cloudBreathFactor());
         }
@@ -2146,8 +2306,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         function tick(now) {
           const dt = Math.min(0.05, (now - last) / 1000);
           last = now;
-          breathPhase += dt * ((Math.PI * 2) / 2.8);
-          applyActiveCloudOpacity();
+          breathPhase += dt * ((Math.PI * 2) / CLOUD_FADE_PERIOD_SEC);
+          applyCloudMotionVisuals();
           breathRafId = requestAnimationFrame(tick);
         }
         breathRafId = requestAnimationFrame(tick);
@@ -2190,7 +2350,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             activeRadarLayer = nextLayer;
             isRefreshingCloud = false;
             startCloudBreath();
-            applyActiveCloudOpacity();
+            applyCloudMotionVisuals();
             updateLiveRadarUI();
             return;
           }
@@ -2199,13 +2359,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
           outgoingRadarLayer = previousLayer;
           activeRadarLayer = nextLayer;
           const startTs = performance.now();
-          const duration = 520;
+          const duration = 380;
 
           function stepFade(now) {
             const t = Math.min(1, (now - startTs) / duration);
             const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
-            nextLayer.setOpacity(radarOpacity * eased);
-            previousLayer.setOpacity(radarOpacity * (1 - eased));
+            const pulse = cloudBreathFactor();
+            nextLayer.setOpacity(radarOpacity * eased * pulse);
+            previousLayer.setOpacity(radarOpacity * (1 - eased) * pulse);
+            if (radarPaneEl) {
+              const drift = cloudDriftOffset();
+              radarPaneEl.style.transform =
+                "translate3d(" + drift.x.toFixed(2) + "px," + drift.y.toFixed(2) + "px,0)";
+            }
             if (t < 1) {
               fadeRafId = requestAnimationFrame(stepFade);
             } else {
@@ -2214,7 +2380,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
               fadeRafId = null;
               isRefreshingCloud = false;
               startCloudBreath();
-              applyActiveCloudOpacity();
+              applyCloudMotionVisuals();
               updateLiveRadarUI();
             }
           }
@@ -2249,6 +2415,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           : null;
         latestRadarFrame = { time: latest.time, path: latest.path };
         updateLiveRadarUI();
+        if (previousRadarFrame) {
+          estimateCloudMotionFromFrames(previousRadarFrame, latestRadarFrame);
+        }
         crossfadeToLatest(latestRadarFrame);
         return true;
       }
