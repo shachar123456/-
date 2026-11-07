@@ -1170,7 +1170,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     .dock-card {
       pointer-events: auto;
-      width: min(860px, 100%);
+      width: min(620px, 100%);
       background: var(--bg-glass-strong);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -1179,74 +1179,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
       padding: 10px 14px;
       box-shadow: var(--shadow-lg);
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: 1fr auto;
       align-items: center;
       gap: 14px;
     }
 
-    .transport-btns {
+    .live-scan-box {
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-
-    .btn-circle {
-      appearance: none;
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.9);
-      color: var(--text-main);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      font-size: 0.95rem;
-      transition: all 0.15s ease;
-    }
-
-    .btn-circle:hover {
-      background: rgba(51, 65, 85, 0.95);
-      border-color: var(--accent);
-    }
-
-    .btn-play {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      border: none;
-      color: #fff;
-      font-size: 1.05rem;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.5);
-    }
-
-    .btn-play:hover {
-      filter: brightness(1.08);
-      transform: scale(1.03);
-    }
-
-    .timeline-box {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      gap: 9px;
       min-width: 0;
-    }
-
-    .scrubber-input {
-      width: 100%;
-      accent-color: var(--accent);
-      cursor: pointer;
-      height: 6px;
-      margin: 0;
-    }
-
-    .timeline-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.74rem;
-      color: var(--text-muted);
+      font-size: 0.8rem;
+      color: var(--text-main);
       font-variant-numeric: tabular-nums;
+    }
+
+    .live-scan-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: livePulseTick 1.5s ease-in-out infinite;
     }
 
     .opacity-box {
@@ -1511,18 +1466,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <footer class="bottom-dock">
         <div class="dock-card">
-          <div class="transport-btns">
-            <button type="button" class="btn-circle" id="prevBtn" aria-label="פריים קודם" title="פריים קודם (חץ ימינה)">▶</button>
-            <button type="button" class="btn-circle btn-play" id="playBtn" aria-label="נגן או השהה" title="נגן / השהה (רווח)">⏵</button>
-            <button type="button" class="btn-circle" id="nextBtn" aria-label="פריים הבא" title="פריים הבא (חץ שמאלה)">◀</button>
-          </div>
-
-          <div class="timeline-box">
-            <input type="range" id="scrubber" class="scrubber-input" min="0" max="0" step="0.01" value="0" aria-label="בורר זמן מכ״ם">
-            <div class="timeline-meta">
-              <span id="rangeLabel">טוען ציר זמן…</span>
-              <span id="frameCounter">0 / 0</span>
-            </div>
+          <div class="live-scan-box" aria-live="polite">
+            <span class="live-scan-dot" aria-hidden="true"></span>
+            <span id="liveScanDock">טוען את סריקת המכ״ם החיה האחרונה…</span>
           </div>
 
           <label class="opacity-box" for="opacitySlider">
@@ -1589,7 +1535,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "use strict";
 
       // Embedded bootstrap snapshot so offline / restricted file:// opens still have valid structure
-      const RAIN_BOOTSTRAP = {"version":"2.0","generated":1793985924,"host":"https://tilecache.rainviewer.com","radar":{"past":[{"time":1793978400,"path":"/v2/radar/6b22c658d1a7"},{"time":1793979000,"path":"/v2/radar/bf9e4d0e8d2b"},{"time":1793979600,"path":"/v2/radar/09196c60d623"},{"time":1793980200,"path":"/v2/radar/235d606919b8"},{"time":1793980800,"path":"/v2/radar/561dc4da9383"},{"time":1793981400,"path":"/v2/radar/742b42e7c24f"},{"time":1793982000,"path":"/v2/radar/a32ae4fb46a6"},{"time":1793982600,"path":"/v2/radar/d3ea1fb5cad2"},{"time":1793983200,"path":"/v2/radar/5e33b4c234ed"},{"time":1793983800,"path":"/v2/radar/2b8b6a8d6aae"},{"time":1793984400,"path":"/v2/radar/06e9a70bbf22"},{"time":1793985000,"path":"/v2/radar/88bdbcf582ba"},{"time":1793985600,"path":"/v2/radar/0064e703b145"}],"nowcast":[]},"satellite":{"infrared":[]}};
 
       const API_URL = "https://api.rainviewer.com/public/weather-maps.json";
       const ISRAEL_CENTER = [31.5, 34.85];
@@ -1738,12 +1683,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       const timestampEl = document.getElementById("timestamp");
       const relativeTimeEl = document.getElementById("relativeTime");
       const liveBadgeEl = document.getElementById("liveBadge");
-      const rangeLabelEl = document.getElementById("rangeLabel");
-      const frameCounterEl = document.getElementById("frameCounter");
-      const scrubberEl = document.getElementById("scrubber");
-      const playBtn = document.getElementById("playBtn");
-      const prevBtn = document.getElementById("prevBtn");
-      const nextBtn = document.getElementById("nextBtn");
+      const liveScanDockEl = document.getElementById("liveScanDock");
       const opacitySlider = document.getElementById("opacitySlider");
       const opacityValue = document.getElementById("opacityValue");
       const citiesBar = document.getElementById("citiesBar");
@@ -2018,19 +1958,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         );
       });
 
-      // RainViewer Radar Layer Management (Preloaded + 60fps rAF Cross-Fade + 1s Live Check)
+      // RainViewer live-only radar: keep exactly one latest scan and crossfade only on replacement.
       let radarHost = "https://tilecache.rainviewer.com";
-      let radarFrames = [];
-      let currentFrameIndex = 0;
+      let latestRadarFrame = null;
       let radarOpacity = 0.85;
-      let isPlaying = false;
-      let animRafId = null;
-      let animLastTs = 0;
-      let animBlendProgress = 0;
       let fadeRafId = null;
-      let layerCache = {};
       let activeRadarLayer = null;
-      let secondaryRadarLayer = null;
+      let outgoingRadarLayer = null;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
       let lastKnownSignature = "";
@@ -2052,21 +1986,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         hourCycle: "h23"
       });
 
-      const dateTimeFormatter = new Intl.DateTimeFormat("he-IL", {
-        timeZone: "Asia/Jerusalem",
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23"
-      });
-
       function formatIsraelTime(unixSec) {
         return timeFormatter.format(new Date(unixSec * 1000));
-      }
-
-      function formatIsraelDateTime(unixSec) {
-        return dateTimeFormatter.format(new Date(unixSec * 1000));
       }
 
       function formatLiveClockNow() {
@@ -2079,7 +2000,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         const diffMin = Math.floor(diffSec / 60);
         const remSec = diffSec % 60;
         if (diffMin < 60) {
-          return "פריים מלפני " + diffMin + ":" + String(remSec).padStart(2, "0") + " דק׳ · נבדק חי";
+          return "סריקה מלפני " + diffMin + ":" + String(remSec).padStart(2, "0") + " דק׳ · נבדק חי";
         }
         const h = Math.floor(diffMin / 60);
         const m = diffMin % 60;
@@ -2140,253 +2061,95 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
       }
 
-      function ensureAllFramesMounted() {
-        radarFrames.forEach(function (frame) {
-          let layer = layerCache[frame.path];
-          if (!layer) {
-            layer = createRadarTileLayer(frame);
-            layerCache[frame.path] = layer;
-          }
-          if (!map.hasLayer(layer)) {
-            layer.addTo(map);
-          }
-        });
-      }
-
-      function silenceOtherLayers(keepA, keepB) {
-        Object.keys(layerCache).forEach(function (path) {
-          const lyr = layerCache[path];
-          if (lyr && lyr !== keepA && lyr !== keepB) {
-            lyr.setOpacity(0);
-          }
-        });
-      }
-
-      function updateTimelineUI(index, fractionalOffset) {
-        if (!radarFrames.length) return;
-        const frame = radarFrames[index];
-        const isLast = index === radarFrames.length - 1;
-        const frac = typeof fractionalOffset === "number" ? fractionalOffset : 0;
-
-        timestampEl.textContent = formatIsraelTime(frame.time) + " · חי " + formatLiveClockNow();
-        relativeTimeEl.textContent = formatRelativeAgo(frame.time);
-
-        if (isUsingFallbackBootstrap) {
-          liveBadgeEl.textContent = "נתוני גיבוי · בדיקה כל 10 שניות";
-          liveBadgeEl.className = "live-badge warn pulsing";
-        } else if (isLast && !isPlaying) {
-          liveBadgeEl.textContent = "חי · בדיקה כל 10 שניות";
-          liveBadgeEl.className = "live-badge pulsing";
-        } else if (isPlaying) {
-          liveBadgeEl.textContent = "ניגון חלק (" + formatIsraelTime(frame.time) + ")";
-          liveBadgeEl.className = "live-badge pulsing";
-        } else {
-          liveBadgeEl.textContent = "היסטוריה (" + formatIsraelTime(frame.time) + ")";
-          liveBadgeEl.className = "live-badge history pulsing";
-        }
-
-        const firstTime = formatIsraelTime(radarFrames[0].time);
-        const lastTime = formatIsraelTime(radarFrames[radarFrames.length - 1].time);
-        rangeLabelEl.textContent = firstTime + " ← " + lastTime + " (שעון ישראל)";
-        frameCounterEl.textContent = (index + 1) + " / " + radarFrames.length;
-
-        const maxVal = Math.max(0, radarFrames.length - 1);
-        scrubberEl.max = String(maxVal);
-        const smoothVal = Math.min(maxVal, index + frac);
-        scrubberEl.value = String(smoothVal.toFixed(2));
-      }
-
-      function showFrame(index, immediate) {
-        if (!radarFrames.length) return;
-        const len = radarFrames.length;
-        const safeIndex = ((Math.round(index) % len) + len) % len;
-        currentFrameIndex = safeIndex;
-
-        ensureAllFramesMounted();
-        const frame = radarFrames[safeIndex];
-        const nextLayer = layerCache[frame.path];
-
-        if (fadeRafId) {
-          cancelAnimationFrame(fadeRafId);
-          fadeRafId = null;
-        }
-
-        if (immediate || !activeRadarLayer || activeRadarLayer === nextLayer) {
-          silenceOtherLayers(nextLayer, null);
-          nextLayer.setOpacity(radarOpacity);
-          activeRadarLayer = nextLayer;
-          secondaryRadarLayer = null;
-          updateTimelineUI(safeIndex, 0);
+      function updateLiveRadarUI() {
+        if (!latestRadarFrame) {
+          timestampEl.textContent = "חי " + formatLiveClockNow();
+          relativeTimeEl.textContent = "ממתין לסריקת מכ״ם עדכנית…";
+          liveScanDockEl.textContent = "ממתין לסריקת המכ״ם החיה האחרונה…";
           return;
         }
 
-        const prevLayer = activeRadarLayer;
-        secondaryRadarLayer = prevLayer;
-        activeRadarLayer = nextLayer;
-        silenceOtherLayers(nextLayer, prevLayer);
+        const scanTime = formatIsraelTime(latestRadarFrame.time);
+        const age = formatRelativeAgo(latestRadarFrame.time);
+        timestampEl.textContent = "סריקה " + scanTime + " · חי " + formatLiveClockNow();
+        relativeTimeEl.textContent = age;
+        liveScanDockEl.textContent = "סריקת מכ״ם חיה אחרונה: " + scanTime + " · " + age;
+        liveBadgeEl.textContent = isUsingFallbackBootstrap
+          ? "אין חיבור חי · ניסיון כל 10 שניות"
+          : "חי בלבד · בדיקה כל 10 שניות";
+        liveBadgeEl.className = isUsingFallbackBootstrap
+          ? "live-badge warn pulsing"
+          : "live-badge pulsing";
+      }
 
-        const startTs = performance.now();
-        const duration = 220;
+      function removeRadarLayer(layer) {
+        if (layer && map.hasLayer(layer)) {
+          map.removeLayer(layer);
+        }
+      }
 
-        function stepFade(now) {
-          const t = Math.min(1, (now - startTs) / duration);
-          const ease = t * (2 - t);
-          nextLayer.setOpacity(radarOpacity * ease);
-          prevLayer.setOpacity(radarOpacity * (1 - ease));
-          if (t < 1) {
-            fadeRafId = requestAnimationFrame(stepFade);
-          } else {
-            prevLayer.setOpacity(0);
-            secondaryRadarLayer = null;
+      function crossfadeToLatest(frame) {
+        const nextLayer = createRadarTileLayer(frame);
+        nextLayer.addTo(map);
+
+        let switched = false;
+        function beginSwitch() {
+          if (switched) return;
+          switched = true;
+
+          // A newer response can arrive while tiles are loading; never display an obsolete scan.
+          if (!latestRadarFrame || latestRadarFrame.path !== frame.path) {
+            removeRadarLayer(nextLayer);
+            return;
+          }
+
+          if (fadeRafId) {
+            cancelAnimationFrame(fadeRafId);
             fadeRafId = null;
           }
-        }
-        fadeRafId = requestAnimationFrame(stepFade);
-        updateTimelineUI(safeIndex, 0);
-      }
-
-      function stopAnimation() {
-        isPlaying = false;
-        if (animRafId) {
-          cancelAnimationFrame(animRafId);
-          animRafId = null;
-        }
-        animBlendProgress = 0;
-        playBtn.textContent = "⏵";
-        playBtn.setAttribute("aria-label", "נגן אנימציית מכ״ם");
-        showFrame(currentFrameIndex, true);
-      }
-
-      function startAnimation() {
-        if (!radarFrames.length) return;
-        isPlaying = true;
-        ensureAllFramesMounted();
-        playBtn.textContent = "⏸";
-        playBtn.setAttribute("aria-label", "השהה אנימציית מכ״ם");
-        animLastTs = performance.now();
-        animBlendProgress = 0;
-
-        const FRAME_DURATION_MS = 650;
-
-        function stepPlayback(now) {
-          if (!isPlaying) return;
-          const dt = now - animLastTs;
-          animLastTs = now;
-          animBlendProgress += dt / FRAME_DURATION_MS;
-
-          const len = radarFrames.length;
-          if (animBlendProgress >= 1) {
-            const steps = Math.floor(animBlendProgress);
-            currentFrameIndex = (currentFrameIndex + steps) % len;
-            animBlendProgress -= steps;
+          if (outgoingRadarLayer) {
+            removeRadarLayer(outgoingRadarLayer);
+            outgoingRadarLayer = null;
           }
 
-          const nextIndex = (currentFrameIndex + 1) % len;
-          const currFrame = radarFrames[currentFrameIndex];
-          const nextFrame = radarFrames[nextIndex];
-          const currLayer = layerCache[currFrame.path];
-          const nextLayer = layerCache[nextFrame.path];
-
-          silenceOtherLayers(currLayer, nextLayer);
-
-          // Smooth cosine interpolation between consecutive frames
-          const smoothT = 0.5 - 0.5 * Math.cos(animBlendProgress * Math.PI);
-          if (currLayer && nextLayer && currLayer !== nextLayer) {
-            currLayer.setOpacity(radarOpacity * (1 - smoothT));
-            nextLayer.setOpacity(radarOpacity * smoothT);
-            activeRadarLayer = currLayer;
-            secondaryRadarLayer = nextLayer;
-          } else if (currLayer) {
-            currLayer.setOpacity(radarOpacity);
-            activeRadarLayer = currLayer;
-            secondaryRadarLayer = null;
+          if (!activeRadarLayer) {
+            nextLayer.setOpacity(radarOpacity);
+            activeRadarLayer = nextLayer;
+            return;
           }
 
-          updateTimelineUI(
-            currentFrameIndex,
-            currentFrameIndex < len - 1 ? animBlendProgress : 0
-          );
+          const previousLayer = activeRadarLayer;
+          outgoingRadarLayer = previousLayer;
+          activeRadarLayer = nextLayer;
+          const startTs = performance.now();
+          const duration = 420;
 
-          animRafId = requestAnimationFrame(stepPlayback);
-        }
-
-        animRafId = requestAnimationFrame(stepPlayback);
-      }
-
-      function togglePlay() {
-        if (isPlaying) {
-          stopAnimation();
-        } else {
-          startAnimation();
-        }
-      }
-
-      playBtn.addEventListener("click", togglePlay);
-      prevBtn.addEventListener("click", function () {
-        stopAnimation();
-        showFrame(currentFrameIndex - 1, false);
-      });
-      nextBtn.addEventListener("click", function () {
-        stopAnimation();
-        showFrame(currentFrameIndex + 1, false);
-      });
-
-      scrubberEl.addEventListener("input", function () {
-        if (isPlaying) {
-          isPlaying = false;
-          if (animRafId) {
-            cancelAnimationFrame(animRafId);
-            animRafId = null;
+          function stepFade(now) {
+            const t = Math.min(1, (now - startTs) / duration);
+            const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
+            nextLayer.setOpacity(radarOpacity * eased);
+            previousLayer.setOpacity(radarOpacity * (1 - eased));
+            if (t < 1) {
+              fadeRafId = requestAnimationFrame(stepFade);
+            } else {
+              removeRadarLayer(previousLayer);
+              outgoingRadarLayer = null;
+              fadeRafId = null;
+            }
           }
-          playBtn.textContent = "⏵";
-          playBtn.setAttribute("aria-label", "נגן אנימציית מכ״ם");
+          fadeRafId = requestAnimationFrame(stepFade);
         }
-        const rawVal = Number(scrubberEl.value);
-        const len = radarFrames.length;
-        if (!len) return;
-        const baseIdx = Math.min(len - 1, Math.max(0, Math.floor(rawVal)));
-        const nextIdx = Math.min(len - 1, baseIdx + 1);
-        const frac = rawVal - baseIdx;
 
-        currentFrameIndex = Math.round(rawVal);
-        ensureAllFramesMounted();
-        const layerA = layerCache[radarFrames[baseIdx].path];
-        const layerB = layerCache[radarFrames[nextIdx].path];
-        silenceOtherLayers(layerA, layerB);
-
-        if (layerA && layerB && layerA !== layerB) {
-          layerA.setOpacity(radarOpacity * (1 - frac));
-          layerB.setOpacity(radarOpacity * frac);
-          activeRadarLayer = frac < 0.5 ? layerA : layerB;
-          secondaryRadarLayer = frac < 0.5 ? layerB : layerA;
-        } else if (layerA) {
-          layerA.setOpacity(radarOpacity);
-          activeRadarLayer = layerA;
-          secondaryRadarLayer = null;
-        }
-        updateTimelineUI(currentFrameIndex, frac - (currentFrameIndex - baseIdx));
-      });
+        nextLayer.once("load", beginSwitch);
+        setTimeout(beginSwitch, 2500);
+      }
 
       opacitySlider.addEventListener("input", function () {
         const val = Number(opacitySlider.value);
         radarOpacity = val / 100;
         opacityValue.textContent = val + "%";
-        if (!isPlaying && activeRadarLayer) {
+        if (activeRadarLayer) {
           activeRadarLayer.setOpacity(radarOpacity);
-        }
-      });
-
-      document.addEventListener("keydown", function (ev) {
-        if (ev.target && (ev.target.tagName === "INPUT" || ev.target.tagName === "TEXTAREA")) return;
-        if (ev.code === "Space") {
-          ev.preventDefault();
-          togglePlay();
-        } else if (ev.code === "ArrowRight") {
-          stopAnimation();
-          showFrame(currentFrameIndex - 1, false);
-        } else if (ev.code === "ArrowLeft") {
-          stopAnimation();
-          showFrame(currentFrameIndex + 1, false);
         }
       });
 
@@ -2395,33 +2158,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
           return false;
         }
         const past = data.radar.past;
-        const nowcast = Array.isArray(data.radar.nowcast) ? data.radar.nowcast : [];
-        const combined = past.concat(nowcast);
-        const newSig =
-          (data.host || "") +
-          "|" +
-          combined.map(function (f) { return f.time + ":" + f.path; }).join(",");
+        // Live-only: select exactly the newest measured scan; never retain history or forecasts.
+        const latest = past[past.length - 1];
+        const newSig = (data.host || "") + "|" + latest.time + ":" + latest.path;
 
         isUsingFallbackBootstrap = Boolean(isFallbackBootstrap);
 
-        // If frames are identical, keep current layers untouched for zero-flicker smoothness
-        if (newSig === lastKnownSignature && radarFrames.length > 0) {
-          updateTimelineUI(currentFrameIndex, isPlaying ? animBlendProgress : 0);
+        // If the latest scan is unchanged, leave the mounted layer completely untouched.
+        if (newSig === lastKnownSignature && latestRadarFrame) {
+          updateLiveRadarUI();
           return true;
         }
 
-        const wasAtLatest =
-          !radarFrames.length || currentFrameIndex >= radarFrames.length - 1;
         lastKnownSignature = newSig;
         radarHost = data.host || "https://tilecache.rainviewer.com";
-        radarFrames = combined;
-
-        ensureAllFramesMounted();
-
-        if (!isPlaying) {
-          const targetIdx = wasAtLatest ? past.length - 1 : Math.min(currentFrameIndex, radarFrames.length - 1);
-          showFrame(targetIdx, false);
-        }
+        latestRadarFrame = { time: latest.time, path: latest.path };
+        updateLiveRadarUI();
+        crossfadeToLatest(latestRadarFrame);
         return true;
       }
 
@@ -2436,11 +2189,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
             throw new Error("Empty radar frames");
           }
         } catch (err) {
-          if (!radarFrames.length) {
-            applyRadarPayload(RAIN_BOOTSTRAP, true);
-            if (!isSilentTick) {
-              showToast("מוצגים נתוני גיבוי שמורים — לתצוגה חיה מלאה מומלץ גם לבדוק בלשונית ״מכ״ם השמ״ט / Windy״.", 7000);
-            }
+          // Keep the last live layer mounted on transient failures; never fall back to old history.
+          if (!latestRadarFrame) {
+            isUsingFallbackBootstrap = true;
+            updateLiveRadarUI();
+          }
+          if (!isSilentTick) {
+            showToast("לא ניתן לקבל כרגע סריקה חיה — ננסה שוב אוטומטית בעוד 10 שניות.", 7000);
           }
         } finally {
           fetchInFlight = false;
@@ -2513,9 +2268,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       fetchRainViewerData(false);
       loadImsImage(10);
       setInterval(function () {
-        if (radarFrames.length && !isPlaying) {
-          updateTimelineUI(currentFrameIndex, 0);
-        }
+        updateLiveRadarUI();
       }, 1000);
       setInterval(function () {
         fetchRainViewerData(true);
