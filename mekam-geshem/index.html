@@ -1958,13 +1958,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
         );
       });
 
-      // RainViewer live-only radar: keep exactly one latest scan and crossfade only on replacement.
+      // One-minute visual loop: six 10-second interpolation steps ending at the latest real scan.
       let radarHost = "https://tilecache.rainviewer.com";
+      let previousRadarFrame = null;
       let latestRadarFrame = null;
       let radarOpacity = 0.85;
-      let fadeRafId = null;
+      let previousRadarLayer = null;
       let activeRadarLayer = null;
-      let outgoingRadarLayer = null;
+      let loopRafId = null;
+      let loopStartedAt = 0;
+      let loopStep = -1;
+      let loopFraction = 0;
+      let loopTransition = null;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
       let lastKnownSignature = "";
@@ -2073,10 +2078,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         const age = formatRelativeAgo(latestRadarFrame.time);
         timestampEl.textContent = "סריקה " + scanTime + " · חי " + formatLiveClockNow();
         relativeTimeEl.textContent = age;
-        liveScanDockEl.textContent = "סריקת מכ״ם חיה אחרונה: " + scanTime + " · " + age;
+        const loopSecond = Math.max(0, loopStep) * 10;
+        liveScanDockEl.textContent =
+          "הדמיית תנועה " +
+          String(loopSecond).padStart(2, "0") +
+          "/60 שנ׳ · הסיום הוא סריקת אמת " +
+          scanTime;
         liveBadgeEl.textContent = isUsingFallbackBootstrap
           ? "אין חיבור חי · ניסיון כל 10 שניות"
-          : "חי בלבד · בדיקה כל 10 שניות";
+          : "לולאת דקה · תמונה כל 10 שניות";
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
           : "live-badge pulsing";
@@ -2088,69 +2098,88 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
       }
 
-      function crossfadeToLatest(frame) {
-        const nextLayer = createRadarTileLayer(frame);
-        nextLayer.addTo(map);
-
-        let switched = false;
-        function beginSwitch() {
-          if (switched) return;
-          switched = true;
-
-          // A newer response can arrive while tiles are loading; never display an obsolete scan.
-          if (!latestRadarFrame || latestRadarFrame.path !== frame.path) {
-            removeRadarLayer(nextLayer);
-            return;
-          }
-
-          if (fadeRafId) {
-            cancelAnimationFrame(fadeRafId);
-            fadeRafId = null;
-          }
-          if (outgoingRadarLayer) {
-            removeRadarLayer(outgoingRadarLayer);
-            outgoingRadarLayer = null;
-          }
-
-          if (!activeRadarLayer) {
-            nextLayer.setOpacity(radarOpacity);
-            activeRadarLayer = nextLayer;
-            return;
-          }
-
-          const previousLayer = activeRadarLayer;
-          outgoingRadarLayer = previousLayer;
-          activeRadarLayer = nextLayer;
-          const startTs = performance.now();
-          const duration = 420;
-
-          function stepFade(now) {
-            const t = Math.min(1, (now - startTs) / duration);
-            const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
-            nextLayer.setOpacity(radarOpacity * eased);
-            previousLayer.setOpacity(radarOpacity * (1 - eased));
-            if (t < 1) {
-              fadeRafId = requestAnimationFrame(stepFade);
-            } else {
-              removeRadarLayer(previousLayer);
-              outgoingRadarLayer = null;
-              fadeRafId = null;
-            }
-          }
-          fadeRafId = requestAnimationFrame(stepFade);
+      function applyLoopOpacity(fraction) {
+        loopFraction = Math.max(0, Math.min(1, fraction));
+        if (previousRadarLayer) {
+          previousRadarLayer.setOpacity(radarOpacity * (1 - loopFraction));
         }
+        if (activeRadarLayer) {
+          activeRadarLayer.setOpacity(radarOpacity * loopFraction);
+        }
+      }
 
-        nextLayer.once("load", beginSwitch);
-        setTimeout(beginSwitch, 2500);
+      function startMinuteLoop() {
+        if (loopRafId) cancelAnimationFrame(loopRafId);
+        loopStartedAt = performance.now();
+        loopStep = -1;
+        loopFraction = 0;
+        loopTransition = null;
+
+        function tick(now) {
+          const elapsed = (now - loopStartedAt) % 60000;
+          const nextStep = Math.min(5, Math.floor(elapsed / 10000));
+          if (nextStep !== loopStep) {
+            loopStep = nextStep;
+            loopTransition = {
+              from: loopFraction,
+              to: nextStep / 5,
+              startedAt: now
+            };
+            updateLiveRadarUI();
+          }
+
+          if (loopTransition) {
+            const t = Math.min(1, (now - loopTransition.startedAt) / 650);
+            const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
+            applyLoopOpacity(
+              loopTransition.from +
+              (loopTransition.to - loopTransition.from) * eased
+            );
+            if (t >= 1) loopTransition = null;
+          }
+          loopRafId = requestAnimationFrame(tick);
+        }
+        loopRafId = requestAnimationFrame(tick);
+      }
+
+      function mountMinuteLoop(previousFrame, latestFrame, signature) {
+        const nextPreviousLayer = createRadarTileLayer(previousFrame);
+        const nextLatestLayer = createRadarTileLayer(latestFrame);
+        nextPreviousLayer.addTo(map);
+        nextLatestLayer.addTo(map);
+
+        let readyCount = 0;
+        let mounted = false;
+        function beginLoop() {
+          if (mounted) return;
+          mounted = true;
+          if (signature !== lastKnownSignature) {
+            removeRadarLayer(nextPreviousLayer);
+            removeRadarLayer(nextLatestLayer);
+            return;
+          }
+          if (loopRafId) cancelAnimationFrame(loopRafId);
+          removeRadarLayer(previousRadarLayer);
+          removeRadarLayer(activeRadarLayer);
+          previousRadarLayer = nextPreviousLayer;
+          activeRadarLayer = nextLatestLayer;
+          applyLoopOpacity(0);
+          startMinuteLoop();
+        }
+        function markReady() {
+          readyCount++;
+          if (readyCount >= 2) beginLoop();
+        }
+        nextPreviousLayer.once("load", markReady);
+        nextLatestLayer.once("load", markReady);
+        setTimeout(beginLoop, 3000);
       }
 
       opacitySlider.addEventListener("input", function () {
         const val = Number(opacitySlider.value);
         radarOpacity = val / 100;
         opacityValue.textContent = val + "%";
-        if (activeRadarLayer) {
-          activeRadarLayer.setOpacity(radarOpacity);
-        }
+        applyLoopOpacity(loopFraction);
       });
 
       function applyRadarPayload(data, isFallbackBootstrap) {
@@ -2158,9 +2187,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
           return false;
         }
         const past = data.radar.past;
-        // Live-only: select exactly the newest measured scan; never retain history or forecasts.
         const latest = past[past.length - 1];
-        const newSig = (data.host || "") + "|" + latest.time + ":" + latest.path;
+        const previous = past.length > 1 ? past[past.length - 2] : latest;
+        const newSig =
+          (data.host || "") +
+          "|" +
+          previous.time + ":" + previous.path +
+          "|" +
+          latest.time + ":" + latest.path;
 
         isUsingFallbackBootstrap = Boolean(isFallbackBootstrap);
 
@@ -2172,9 +2206,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         lastKnownSignature = newSig;
         radarHost = data.host || "https://tilecache.rainviewer.com";
+        previousRadarFrame = { time: previous.time, path: previous.path };
         latestRadarFrame = { time: latest.time, path: latest.path };
         updateLiveRadarUI();
-        crossfadeToLatest(latestRadarFrame);
+        mountMinuteLoop(previousRadarFrame, latestRadarFrame, newSig);
         return true;
       }
 
