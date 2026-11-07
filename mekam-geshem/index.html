@@ -2032,6 +2032,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       let activeRadarLayer = null;
       let outgoingRadarLayer = null;
       let fadeRafId = null;
+      let breathRafId = null;
+      let breathPhase = 0;
       let radarTileLoads = 0;
       let radarTileErrors = 0;
       let lastKnownSignature = "";
@@ -2162,7 +2164,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         liveScanDockEl.textContent = liveStamp;
         liveScanAgeEl.textContent = isRefreshingCloud
           ? "מרענן ענן ומדידה יחד…"
-          : (age + " · הענן והרענון מסונכרנים");
+          : (age + " · פייד רציף + רענון מסונכרן");
 
         if (previousRadarFrame && previousRadarFrame.path !== latestRadarFrame.path) {
           historyDateTimeEl.textContent = formatIsraelDateTime(previousRadarFrame.time);
@@ -2174,10 +2176,34 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         liveBadgeEl.textContent = isUsingFallbackBootstrap
           ? "אין חיבור חי · ניסיון כל 10 שניות"
-          : (isRefreshingCloud ? "מרענן ענן…" : "תמונה חיה אחת");
+          : (isRefreshingCloud ? "מרענן ענן…" : "חי · פייד עדין");
         liveBadgeEl.className = isUsingFallbackBootstrap
           ? "live-badge warn pulsing"
           : "live-badge pulsing";
+      }
+
+      function cloudBreathFactor() {
+        // Soft continuous fade so the live cloud feels in motion between scans.
+        return 0.72 + 0.28 * (0.5 - 0.5 * Math.cos(breathPhase));
+      }
+
+      function applyActiveCloudOpacity() {
+        if (activeRadarLayer && !isRefreshingCloud) {
+          activeRadarLayer.setOpacity(radarOpacity * cloudBreathFactor());
+        }
+      }
+
+      function startCloudBreath() {
+        if (breathRafId) return;
+        let last = performance.now();
+        function tick(now) {
+          const dt = Math.min(0.05, (now - last) / 1000);
+          last = now;
+          breathPhase += dt * ((Math.PI * 2) / 2.8);
+          applyActiveCloudOpacity();
+          breathRafId = requestAnimationFrame(tick);
+        }
+        breathRafId = requestAnimationFrame(tick);
       }
 
       function removeRadarLayer(layer) {
@@ -2214,9 +2240,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           }
 
           if (!activeRadarLayer) {
-            nextLayer.setOpacity(radarOpacity);
             activeRadarLayer = nextLayer;
             isRefreshingCloud = false;
+            startCloudBreath();
+            applyActiveCloudOpacity();
             updateLiveRadarUI();
             return;
           }
@@ -2239,6 +2266,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
               outgoingRadarLayer = null;
               fadeRafId = null;
               isRefreshingCloud = false;
+              startCloudBreath();
+              applyActiveCloudOpacity();
               updateLiveRadarUI();
             }
           }
@@ -2253,9 +2282,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         const val = Number(opacitySlider.value);
         radarOpacity = val / 100;
         opacityValue.textContent = val + "%";
-        if (activeRadarLayer) {
-          activeRadarLayer.setOpacity(radarOpacity);
-        }
+        applyActiveCloudOpacity();
       });
 
       function applyRadarPayload(data, isFallbackBootstrap) {
